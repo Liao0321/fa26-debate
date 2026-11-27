@@ -26,19 +26,9 @@
       <section class="section">
         <h2 class="section-title">我們的簡報</h2>
         <div class="card">
-          <ol class="small" style="margin-top:0;padding-left:1.3em">
-            <li>在 Google Slides 按右上角「<b>共用</b>」→「一般存取權」改成「<b>國立政治大學（g.nccu.edu.tw）</b>」或「<b>知道連結的任何人</b>」，角色選「檢視者」。</li>
-            <li>複製瀏覽器網址列的網址（像 <code>https://docs.google.com/presentation/d/……/edit</code>），貼到下面，按「儲存」。</li>
-            <li>之後修改簡報內容<b>不用</b>重新貼，投影畫面會顯示最新版本。</li>
-          </ol>
-          <div class="field">
-            <label for="slides-url">Google Slides 網址</label>
-            <input type="text" id="slides-url" inputmode="url" placeholder="https://docs.google.com/presentation/d/……/edit">
-            <div class="hint" id="slides-hint"></div>
-          </div>
+          <p id="slides-msg" style="margin-top:0"></p>
           <div class="row">
-            <button class="btn btn-primary" id="save-slides" type="button">儲存簡報連結</button>
-            <a class="btn hidden" id="open-slides" target="_blank" rel="noopener">在新分頁打開</a>
+            <a class="btn btn-primary btn-big hidden" id="open-slides" target="_blank" rel="noopener">✏️ 打開我們的簡報</a>
           </div>
           <div class="slides-preview hidden" id="slides-preview"></div>
         </div>

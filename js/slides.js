@@ -36,3 +36,12 @@ export function slidesViewUrl(url) {
     ? `https://docs.google.com/presentation/d/e/${p.id}/pub`
     : `https://docs.google.com/presentation/d/${p.id}/view`;
 }
+
+// 給選手編輯用的網址（老師在 Google Drive 把四份簡報設成組員可編輯）
+export function slidesEditUrl(url) {
+  const p = parseSlidesUrl(url);
+  if (!p) return "";
+  return p.kind === "pub"
+    ? `https://docs.google.com/presentation/d/e/${p.id}/pub`
+    : `https://docs.google.com/presentation/d/${p.id}/edit`;
+}

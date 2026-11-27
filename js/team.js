@@ -1,4 +1,4 @@
-// 選手頁：貼簡報連結、選每輪發言人、「我說完了」
+// 選手頁：打開老師建好的簡報、選每輪發言人、「我說完了」
 import {
   doc, onSnapshot, setDoc, updateDoc, writeBatch, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -8,7 +8,7 @@ import {
 import { TEAM_IDS, SESSIONS, SIDE_LABEL } from "./defaults.js";
 import { mountLiveBar } from "./livebar.js";
 import { speakerPressDone, timing } from "./live.js";
-import { isSlidesUrl, slidesEmbedUrl, slidesViewUrl } from "./slides.js";
+import { isSlidesUrl, slidesEmbedUrl, slidesEditUrl } from "./slides.js";
 
 const gate = document.getElementById("gate");
 const area = document.getElementById("team-area");
@@ -68,13 +68,12 @@ function selectTeam(t) {
   stops.forEach((s) => s());
   pub = {};
   priv = null;
-  slidesFilled = false;
   speakersDirty = false;
   stops = [
     onSnapshot(doc(db, COL.teams, t), (snap) => {
       pub = snap.exists() ? snap.data() : {};
       renderHead();
-      fillSlidesOnce();
+      fillSlides();
       renderDone();
     }, (e) => toast(`讀取組別資料失敗：${e.message}`, "error")),
     onSnapshot(doc(db, COL.teams, t, "private", "info"), (snap) => {
@@ -105,50 +104,27 @@ function renderHead() {
 }
 
 // ---------- 簡報 ----------
-let slidesFilled = false;
-const urlInput = document.getElementById("slides-url");
+// 四份簡報由老師在 Google Drive 建好、在後台設定網址；選手這裡只要點開來編輯
 
-function fillSlidesOnce() {
-  if (slidesFilled) return;
-  slidesFilled = true;
-  urlInput.value = pub.slidesUrl || "";
-  renderSlidesPreview(pub.slidesUrl || "");
-}
-
-function renderSlidesPreview(url) {
+function fillSlides() {
+  const url = pub.slidesUrl || "";
   const ok = isSlidesUrl(url);
-  const hint = document.getElementById("slides-hint");
-  hint.textContent = !url ? "還沒有貼簡報。" : ok ? "✓ 網址格式正確" : "⚠️ 這不是 Google Slides 的網址";
-  hint.style.color = url && !ok ? "var(--red)" : "";
+  const msg = document.getElementById("slides-msg");
+  msg.innerHTML = ok
+    ? "老師已經幫你們建好簡報，點下面的按鈕直接編輯。改完<b>不用</b>做任何事，投影畫面會顯示最新版本。<br><span class=\"small muted\">如果打開說「需要存取權」，請確認你登入的是學校帳號，或請老師把你加成編輯者。</span>"
+    : "老師還沒有設定你們這組的簡報，請稍等或通知老師。";
   const open = document.getElementById("open-slides");
   open.classList.toggle("hidden", !ok);
-  if (ok) open.href = slidesViewUrl(url);
+  if (ok) open.href = slidesEditUrl(url);
   const box = document.getElementById("slides-preview");
   const src = ok ? slidesEmbedUrl(url) : "";
   box.classList.toggle("hidden", !ok);
-  // 網址沒變就不重新載入預覽
   if (ok && box.dataset.src !== src) {
     box.dataset.src = src;
-    box.innerHTML = `<p class="small muted" style="margin:12px 0 6px">▼ 預覽（如果看到「需要權限」，請檢查共用設定）</p>
+    box.innerHTML = `<p class="small muted" style="margin:12px 0 6px">▼ 投影畫面會長這樣</p>
       <div class="slides-frame"><iframe src="${esc(src)}" title="簡報預覽" allowfullscreen></iframe></div>`;
   }
 }
-urlInput.addEventListener("input", () => renderSlidesPreview(urlInput.value.trim()));
-
-document.getElementById("save-slides").addEventListener("click", async () => {
-  const url = urlInput.value.trim();
-  if (url && !isSlidesUrl(url)) return toast("請貼 Google Slides 的網址（docs.google.com/presentation/…）", "error", 5000);
-  try {
-    const ref = doc(db, COL.teams, teamId);
-    const data = { slidesUrl: url, updatedAt: serverTimestamp() };
-    // 管理員可以直接建立資料；選手只能修改已經存在的資料（老師儲存名單時會建立）
-    if (profile?.isAdmin) await setDoc(ref, data, { merge: true });
-    else await updateDoc(ref, data);
-    toast(url ? "簡報連結已儲存" : "已清除簡報連結", "ok");
-  } catch (e) {
-    toast(saveErrorText(e), "error", 8000);
-  }
-});
 
 // 儲存失敗時，用看得懂的話說明原因
 function saveErrorText(e) {

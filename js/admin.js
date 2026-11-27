@@ -12,6 +12,7 @@ import {
   buildDefaultRundown, makeSegment, planTimes, fmtMinutes, toMinutes,
 } from "./defaults.js";
 import { watchRundown } from "./live.js";
+import { isSlidesUrl, slidesEditUrl } from "./slides.js";
 
 const gate = document.getElementById("gate");
 const area = document.getElementById("admin-area");
@@ -54,6 +55,41 @@ startPage({
       });
     }
   },
+});
+
+// ---------- 四組簡報連結（存在 debate_teams/{組別}.slidesUrl） ----------
+let slidesFilledAdmin = false;
+function slidesHint(t) {
+  const v = document.querySelector(`[data-slides="${t}"]`).value.trim();
+  const h = document.querySelector(`[data-slides-hint="${t}"]`);
+  if (!v) { h.textContent = "還沒設定"; return; }
+  h.innerHTML = isSlidesUrl(v)
+    ? `✓ 格式正確・<a href="${esc(slidesEditUrl(v))}" target="_blank" rel="noopener">打開看看</a>`
+    : "⚠️ 這不是 Google Slides 的網址";
+}
+TEAM_IDS.forEach((t) => document.querySelector(`[data-slides="${t}"]`).addEventListener("input", () => slidesHint(t)));
+onSnapshot(collection(db, COL.teams), (snap) => {
+  if (slidesFilledAdmin) return;
+  slidesFilledAdmin = true;
+  snap.forEach((d) => {
+    const inp = document.querySelector(`[data-slides="${d.id}"]`);
+    if (inp) inp.value = d.data().slidesUrl || "";
+  });
+  TEAM_IDS.forEach(slidesHint);
+}, () => {});
+
+document.getElementById("save-slides").addEventListener("click", async () => {
+  const urls = Object.fromEntries(TEAM_IDS.map((t) => [t, document.querySelector(`[data-slides="${t}"]`).value.trim()]));
+  const bad = TEAM_IDS.filter((t) => urls[t] && !isSlidesUrl(urls[t]));
+  if (bad.length) return toast("有網址不是 Google Slides 的網址，請檢查", "error", 5000);
+  try {
+    const batch = writeBatch(db);
+    TEAM_IDS.forEach((t) => batch.set(doc(db, COL.teams, t), { slidesUrl: urls[t], updatedAt: serverTimestamp() }, { merge: true }));
+    await batch.commit();
+    toast("四組簡報連結已儲存", "ok");
+  } catch (e) {
+    toast(`儲存失敗：${e.message}`, "error", 6000);
+  }
 });
 
 // ============================================================

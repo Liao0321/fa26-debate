@@ -205,20 +205,13 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/debate_teams/$(teamId)/private/info).data;
     }
 
-    // 簡報連結：空白，或 Google Slides 網址
-    function dValidSlidesUrl(u) {
-      return u is string && u.size() <= 500
-        && (u == '' || u.matches('^https://docs[.]google[.]com/presentation/.*'));
-    }
-
     // debate_teams/{am_pro|am_con|pm_pro|pm_con}：組員名字（不含 email）、簡報連結、每輪發言人的名字
-    // 任何人可讀；管理員可改全部；該組組員只能改簡報連結和發言人名字
+    // 任何人可讀；管理員可改全部（簡報連結由老師在後台設定）；該組組員只能改發言人名字
     match /debate_teams/{teamId} {
       allow read: if true;
       allow write: if dIsAdmin() && teamId in ['am_pro', 'am_con', 'pm_pro', 'pm_con'];
       allow update: if dMyCategory() == teamId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slidesUrl', 'speakerNames', 'updatedAt'])
-        && dValidSlidesUrl(request.resource.data.get('slidesUrl', ''))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['speakerNames', 'updatedAt'])
         && request.resource.data.get('speakerNames', {}) is map
         && request.resource.data.updatedAt == request.time;
 

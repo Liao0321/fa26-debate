@@ -56,6 +56,17 @@
             <div class="field field-con"><label for="team-pm_con">下午反方</label><input type="text" id="team-pm_con" data-team="pm_con" maxlength="20" placeholder="下午反方"></div>
           </div>
 
+          <h3>四組的簡報（Google Slides）</h3>
+          <p class="muted small" style="margin-top:0">老師在 Google Drive 建好四份簡報，把網址貼在這裡。選手頁會出現「打開我們的簡報」按鈕，投影畫面會顯示這份簡報。
+            共用設定：組員設成「編輯者」，一般存取權設成「國立政治大學」或「知道連結的任何人」可檢視（投影電腦才看得到）。</p>
+          <div class="settings-grid team-names">
+            <div class="field field-pro"><label for="slides-am_pro">上午正方</label><input type="text" id="slides-am_pro" data-slides="am_pro" inputmode="url" placeholder="https://docs.google.com/presentation/d/……"><div class="hint" data-slides-hint="am_pro"></div></div>
+            <div class="field field-con"><label for="slides-am_con">上午反方</label><input type="text" id="slides-am_con" data-slides="am_con" inputmode="url" placeholder="https://docs.google.com/presentation/d/……"><div class="hint" data-slides-hint="am_con"></div></div>
+            <div class="field field-pro"><label for="slides-pm_pro">下午正方</label><input type="text" id="slides-pm_pro" data-slides="pm_pro" inputmode="url" placeholder="https://docs.google.com/presentation/d/……"><div class="hint" data-slides-hint="pm_pro"></div></div>
+            <div class="field field-con"><label for="slides-pm_con">下午反方</label><input type="text" id="slides-pm_con" data-slides="pm_con" inputmode="url" placeholder="https://docs.google.com/presentation/d/……"><div class="hint" data-slides-hint="pm_con"></div></div>
+          </div>
+          <button class="btn" id="save-slides" type="button" style="margin-bottom:18px">儲存四組簡報連結</button>
+
           <h3>評分與計時</h3>
           <div class="row" style="margin-bottom:6px">
             <label class="inline-field">主持人、評審的分數 × <input type="number" id="judge-weight" min="1" max="10" step="1"></label>
