@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>安全規則檢測｜FA26 辯論比賽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container">
+    <span class="tag">SECURITY CHECK</span>
+    <h1 class="page-title">安全規則自我檢測</h1>
+    <div class="card">
+      <p style="margin-top:0">這個頁面會用<b>目前登入的帳號</b>，故意做出各種違規操作，確認 Firebase 安全規則都有擋下來。</p>
+      <ul class="small">
+        <li>不同的檢測需要不同的身分，畫面會告訴你哪些項目這次「略過」，要換什麼帳號再測。</li>
+        <li>檢測不會改變任何資料：需要「寫入」的檢測，寫的都是和目前一模一樣的值；萬一沒擋住，也會馬上把測試資料刪掉。</li>
+        <li>建議至少用三種帳號各測一次：<b>管理員</b>、<b>名單上的學生或老師</b>、<b>個人 Gmail</b>。</li>
+      </ul>
+      <div class="row">
+        <button class="btn btn-ghost" id="other-login" type="button">用非學校帳號登入（測試用）</button>
+        <button class="btn btn-ghost hidden" id="other-logout" type="button">登出</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="muted small">目前帳號</div>
+          <b id="who">未登入</b>
+        </div>
+        <span class="spacer"></span>
+        <button class="btn btn-primary btn-big" id="run" type="button" disabled>開始檢測</button>
+      </div>
+    </div>
+
+    <div id="results"></div>
+  </main>
+
+  <script type="module">
+    import {
+      onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, limit,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      startPage, auth, db, COL, configReady, esc, isSchoolEmail, buildProfile, accountOf,
+    } from "./js/common.js";
+    import { OWNER_ADMINS } from "./js/firebase-config.js";
+
+    let user = null;
+    startPage({ active: "" });
+
+    if (configReady) {
+      onAuthStateChanged(auth, (u) => {
+        user = u;
+        document.getElementById("who").textContent = u ? `${u.email}${isSchoolEmail(u.email) ? "" : "（非學校帳號）"}` : "未登入";
+        document.getElementById("run").disabled = !u;
+        document.getElementById("other-logout").classList.toggle("hidden", !u);
+      });
+    }
+
+    document.getElementById("other-login").addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+      } catch (e) {
+        alert(`登入失敗：${e.code || e.message}`);
+      }
+    });
+    document.getElementById("other-logout").addEventListener("click", () => signOut(auth));
+
+    const isPermissionError = (e) => e?.code === "permission-denied";
+    const TEST_EMAIL = "rules-test@g.nccu.edu.tw";
+    // 寫入「和目前一樣」的設定值：萬一沒擋住也不會改變任何東西
+    async function rewriteSettings() {
+      const snap = await getDoc(doc(db, COL.config, "settings"));
+      const w = snap.exists() ? snap.data().judgeWeight ?? 3 : 3;
+      await setDoc(doc(db, COL.config, "settings"), { judgeWeight: w }, { merge: true });
+    }
+
+    // when(ctx) 回傳 true 表示要測；回傳字串表示略過的原因
+    // expect: "deny" 應被拒絕；"allow" 應成功
+    const TESTS = [
+      {
+        name: "任何人：讀取活動設定",
+        expect: "allow",
+        when: () => true,
+        run: () => getDoc(doc(db, COL.config, "settings")),
+      },
+      {
+        name: "非學校帳號：讀取名單",
+        expect: "deny",
+        when: (c) => !c.school || "請用個人 Gmail 登入後再測這一項",
+        run: () => getDocs(query(collection(db, COL.roster), limit(5))),
+      },
+      {
+        name: "非學校帳號：修改活動設定",
+        expect: "deny",
+        when: (c) => !c.school || "請用個人 Gmail 登入後再測這一項",
+        run: rewriteSettings,
+      },
+      {
+        name: "學校帳號：讀取自己的名單資料",
+        expect: "allow",
+        when: (c) => c.school || "需要學校帳號",
+        run: (c) => getDoc(doc(db, COL.roster, c.email)),
+      },
+      {
+        name: "非管理員：讀取全部名單",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        run: () => getDocs(query(collection(db, COL.roster), limit(5))),
+      },
+      {
+        name: "非管理員：讀取別人的名單資料",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        run: () => getDoc(doc(db, COL.roster, OWNER_ADMINS[0])),
+      },
+      {
+        name: "非管理員：修改活動設定",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        run: rewriteSettings,
+      },
+      {
+        name: "非管理員：新增名單",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        run: async () => {
+          const ref = doc(db, COL.roster, TEST_EMAIL);
+          await setDoc(ref, { name: "測試", category: "student" });
+          await deleteDoc(ref).catch(() => {}); // 萬一沒擋住，把測試資料刪掉
+        },
+      },
+      {
+        name: "非管理員：把自己改成管理員",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        run: (c) => setDoc(doc(db, COL.roster, c.email), { isAdmin: true, canControl: true }, { merge: true }),
+      },
+      {
+        name: "管理員：讀取全部名單",
+        expect: "allow",
+        when: (c) => (c.school && c.profile.isAdmin) || "請用管理員帳號測",
+        run: () => getDocs(query(collection(db, COL.roster), limit(5))),
+      },
+      {
+        name: "管理員：修改活動設定（寫回一樣的值）",
+        expect: "allow",
+        when: (c) => (c.school && c.profile.isAdmin) || "請用管理員帳號測",
+        run: rewriteSettings,
+      },
+    ];
+
+    async function buildContext() {
+      const school = isSchoolEmail(user.email) && user.emailVerified;
+      const email = user.email.toLowerCase();
+      let roster = null;
+      if (school) {
+        const snap = await getDoc(doc(db, COL.roster, email)).catch(() => null);
+        roster = snap?.exists() ? snap.data() : null;
+      }
+      const profile = school ? buildProfile(user, roster) : { email, account: accountOf(email), label: "非學校帳號", isAdmin: false };
+      return { school, email, profile };
+    }
+
+    document.getElementById("run").addEventListener("click", async () => {
+      const btn = document.getElementById("run");
+      const box = document.getElementById("results");
+      btn.disabled = true;
+      btn.textContent = "檢測中…";
+      box.innerHTML = "";
+      const ctx = await buildContext();
+      const rows = [];
+      let pass = 0, fail = 0, skip = 0;
+      for (const test of TESTS) {
+        const ok = test.when(ctx);
+        if (ok !== true) {
+          rows.push({ test, status: "skip", note: ok || "此帳號不適用" });
+          skip++;
+          continue;
+        }
+        let outcome, note = "";
+        try {
+          await test.run(ctx);
+          outcome = "allow";
+        } catch (e) {
+          outcome = isPermissionError(e) ? "deny" : "error";
+          note = e.code || e.message;
+        }
+        if (outcome === test.expect) {
+          rows.push({ test, status: "pass", note: outcome === "deny" ? "已被拒絕" : "成功" });
+          pass++;
+        } else {
+          rows.push({
+            test, status: "fail",
+            note: outcome === "allow" ? "⚠️ 沒有被擋下來！" : outcome === "deny" ? `被拒絕了（${note}）` : `發生其他錯誤：${note}`,
+          });
+          fail++;
+        }
+      }
+      box.innerHTML = `
+        <div class="card ${fail ? "danger-zone" : ""}">
+          <h3 style="margin:0">${fail ? `❌ ${fail} 項不符合預期` : "✅ 全部符合預期"}</h3>
+          <p class="muted small" style="margin:4px 0 0">通過 ${pass}・失敗 ${fail}・略過 ${skip}｜身分：${esc(ctx.profile.label)}</p>
+        </div>
+        <div class="table-wrap" style="margin-top:16px"><table>
+          <thead><tr><th>結果</th><th>檢測項目</th><th>預期</th><th>說明</th></tr></thead>
+          <tbody>${rows.map((r) => `
+            <tr class="${r.status === "fail" ? "row-error" : ""}">
+              <td>${{ pass: "✅", fail: "❌", skip: "➖ 略過" }[r.status]}</td>
+              <td>${esc(r.test.name)}</td>
+              <td>${r.test.expect === "deny" ? "應被拒絕" : "應成功"}</td>
+              <td style="white-space:normal">${esc(r.note)}</td>
+            </tr>`).join("")}
+          </tbody></table></div>`;
+      btn.disabled = false;
+      btn.textContent = "再檢測一次";
+    });
+  </script>
+</body>
+</html>

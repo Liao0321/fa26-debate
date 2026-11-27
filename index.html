@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FA26 辯論比賽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="row">
+        <span class="tag">DEBATE DAY・2026.12.04</span>
+      </div>
+      <h1 id="hero-title">FA26<br><span class="hl">辯論比賽</span></h1>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">我的身分</h2>
+      <div class="card" id="me-card"><p class="muted">載入中…</p></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">今日題目</h2>
+      <div class="topic-grid" id="topics"><p class="muted">載入中…</p></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">賽程</h2>
+      <div id="schedule"><p class="muted">載入中…</p></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import {
+      startPage, login, esc, watchSettings, teamName, sessionRole, PAGES, pageReady,
+    } from "./js/common.js";
+    import { buildDefaultRundown, SESSIONS } from "./js/defaults.js";
+    import { renderSchedule, indexByClock } from "./js/schedule.js";
+    import { EVENT_DATE } from "./js/firebase-config.js";
+
+    let settings = null;
+    let profile = null;
+    // 第 2 階段起改讀 Firestore 的流程與即時狀態；現在先用預設流程
+    const rundown = buildDefaultRundown();
+
+    function renderTopics() {
+      if (!settings) return;
+      document.getElementById("topics").innerHTML = ["am", "pm"].map((s) => `
+        <div class="card topic-card">
+          <div class="topic-head"><span>${s.toUpperCase()}</span><span>${esc(SESSIONS[s].label)}・${SESSIONS[s].start}</span></div>
+          <p class="topic-title">${esc(settings.topics[s])}</p>
+          <div class="vs-row">
+            <div class="vs-side pro"><small>正方</small>${esc(teamName(`${s}_pro`, settings))}</div>
+            <div class="vs-mark">VS</div>
+            <div class="vs-side con"><small>反方</small>${esc(teamName(`${s}_con`, settings))}</div>
+          </div>
+        </div>`).join("");
+    }
+
+    function renderScheduleBox() {
+      if (!settings) return;
+      document.getElementById("schedule").innerHTML =
+        renderSchedule(rundown, settings, indexByClock(rundown, EVENT_DATE));
+    }
+    setInterval(renderScheduleBox, 60 * 1000);
+
+    // 這個人今天上午、下午各是什麼角色
+    function dayPlan(p) {
+      const text = { player: "選手（這場不用評分）", host: "主持人（評分 ×{w}）", judge: "評審（評分 ×{w}）", audience: "觀眾（評分 ×1）" };
+      return ["am", "pm"].map((s) => {
+        const role = sessionRole(p, s);
+        const t = text[role].replace("{w}", settings?.judgeWeight ?? 3);
+        return `<li><b>${SESSIONS[s].label}</b>：${esc(t)}</li>`;
+      }).join("");
+    }
+
+    function renderMe() {
+      const box = document.getElementById("me-card");
+      if (!profile) {
+        box.innerHTML = `
+          <p style="margin-top:0">請用學校帳號登入，才能評分、留言。</p>
+          <button class="btn btn-primary btn-big" id="hero-login" type="button">用 @g.nccu.edu.tw 帳號登入</button>`;
+        box.querySelector("#hero-login").addEventListener("click", login);
+        return;
+      }
+      const sideClass = profile.team ? (profile.team.endsWith("pro") ? "badge-pro" : "badge-con") : "badge-orange";
+      const entries = PAGES.filter((pg) => pg.id !== "home" && (!pg.show || pg.show(profile)));
+      box.innerHTML = `
+        <p class="muted small" style="margin:0">已登入</p>
+        <h3 style="margin:0 0 8px">${esc(profile.name)}（${esc(profile.account)}）</h3>
+        <div class="row">
+          <span class="badge ${sideClass}">${esc(profile.label)}</span>
+          ${profile.team && settings?.teamNames?.[profile.team] ? `<span class="badge">${esc(teamName(profile.team, settings))}</span>` : ""}
+          ${!profile.inRoster && !profile.isAdmin ? `<span class="muted small">不在名單上的學校帳號，一律算觀眾</span>` : ""}
+        </div>
+        <ul class="small" style="margin:12px 0 0;padding-left:1.2em">${dayPlan(profile)}</ul>
+        <div class="entry-grid">
+          ${entries.map((pg) => pageReady(pg)
+            ? `<a class="btn ${pg.id === "admin" || pg.id === "control" ? "btn-primary" : ""}" href="${pg.href}"><b>${esc(pg.label)}</b><small>${esc(pg.desc || "")}</small></a>`
+            : `<span class="btn is-soon" aria-disabled="true"><b>${esc(pg.label)}</b><small>準備中</small></span>`).join("")}
+        </div>`;
+    }
+
+    watchSettings((s) => {
+      settings = s;
+      document.title = s.eventName;
+      renderTopics();
+      renderScheduleBox();
+      renderMe();
+    });
+    startPage({ active: "home", onProfile(p) { profile = p; renderMe(); } });
+  </script>
+</body>
+</html>

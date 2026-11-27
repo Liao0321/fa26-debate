@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>後台｜FA26 辯論比賽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container">
+    <div id="gate" class="card"><p class="muted">載入中…</p></div>
+
+    <div id="admin-area" class="hidden">
+      <nav class="jump-links">
+        <a href="#sec-settings">活動設定</a>
+        <a href="#sec-roster">名單</a>
+        <a href="#sec-current">目前名單</a>
+        <a href="#sec-tools">工具</a>
+      </nav>
+
+      <section class="section" id="sec-settings">
+        <h2 class="section-title">活動設定</h2>
+        <div class="card">
+          <div class="field">
+            <label for="event-name">活動名稱</label>
+            <input type="text" id="event-name" maxlength="40">
+            <div class="hint">顯示在頁首、投影畫面待機時。</div>
+          </div>
+
+          <h3>題目</h3>
+          <div class="settings-grid">
+            <div class="field">
+              <label for="topic-am-select">上午場題目（10:00）</label>
+              <select id="topic-am-select" data-topic-select="am"></select>
+              <input type="text" id="topic-am" data-topic="am" maxlength="60" style="margin-top:8px" placeholder="也可以直接輸入其他題目">
+            </div>
+            <div class="field">
+              <label for="topic-pm-select">下午場題目（13:00）</label>
+              <select id="topic-pm-select" data-topic-select="pm"></select>
+              <input type="text" id="topic-pm" data-topic="pm" maxlength="60" style="margin-top:8px" placeholder="也可以直接輸入其他題目">
+            </div>
+          </div>
+
+          <h3>組名</h3>
+          <p class="muted small" style="margin-top:0">沒填的話，畫面上就顯示「上午正方」「下午反方」這類名稱。</p>
+          <div class="settings-grid team-names">
+            <div class="field field-pro"><label for="team-am_pro">上午正方</label><input type="text" id="team-am_pro" data-team="am_pro" maxlength="20" placeholder="上午正方"></div>
+            <div class="field field-con"><label for="team-am_con">上午反方</label><input type="text" id="team-am_con" data-team="am_con" maxlength="20" placeholder="上午反方"></div>
+            <div class="field field-pro"><label for="team-pm_pro">下午正方</label><input type="text" id="team-pm_pro" data-team="pm_pro" maxlength="20" placeholder="下午正方"></div>
+            <div class="field field-con"><label for="team-pm_con">下午反方</label><input type="text" id="team-pm_con" data-team="pm_con" maxlength="20" placeholder="下午反方"></div>
+          </div>
+
+          <h3>評分與計時</h3>
+          <div class="row" style="margin-bottom:6px">
+            <label class="inline-field">主持人、評審的分數 × <input type="number" id="judge-weight" min="1" max="10" step="1"></label>
+            <label class="inline-field">剩 <input type="number" id="bell-warn" min="0" max="120" step="5"> 秒時輕響提醒</label>
+          </div>
+          <p class="muted small">倍數只算「該場」的主持人和評審；他們在另一場是一般觀眾（×1）。</p>
+
+          <button class="btn btn-primary btn-big" id="save-settings" type="button">儲存活動設定</button>
+        </div>
+      </section>
+
+      <section class="section" id="sec-roster">
+        <h2 class="section-title">名單管理</h2>
+        <div class="card">
+          <p style="margin-top:0">從 Google Sheet 選取三欄（<b>類別、名字、email</b>）複製，直接貼到下面。一行一人，欄位順序不拘。</p>
+          <ul class="small muted">
+            <li>類別可填：<b>管理員</b>、<b>控制老師</b>、<b>老師</b>、<b>上午正方</b>、<b>上午反方</b>、<b>下午正方</b>、<b>下午反方</b>、<b>上午主持</b>、<b>下午主持</b>、<b>上午評審</b>、<b>下午評審</b>、<b>學生</b>。</li>
+            <li>一個人只能有一個類別。上午的選手、主持、評審，到了下午自動是觀眾（反之亦然）。</li>
+            <li>不在名單上的學校帳號，自動算「觀眾」。標題列會自動略過。</li>
+            <li>廖老師（s.w.liao）一定是管理員，不用寫進名單。</li>
+          </ul>
+          <div class="field">
+            <textarea id="roster-input" class="mono" rows="12" placeholder="上午正方	王小明	111000001@g.nccu.edu.tw
+上午評審	陳小華	111000002@g.nccu.edu.tw
+控制老師	李老師	teacher@g.nccu.edu.tw"></textarea>
+          </div>
+          <div class="row">
+            <button class="btn btn-yellow" id="preview-btn" type="button">預覽</button>
+            <button class="btn" id="load-current-btn" type="button">把目前名單填回輸入框</button>
+          </div>
+          <div id="preview" class="hidden" style="margin-top:20px"></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-current">
+        <h2 class="section-title">目前名單</h2>
+        <div id="current-roster"><p class="muted">載入中…</p></div>
+      </section>
+
+      <section class="section" id="sec-tools">
+        <h2 class="section-title">工具</h2>
+        <div class="card">
+          <p style="margin-top:0">換過安全規則之後，請用不同身分的帳號打開「安全規則檢測」跑一次。</p>
+          <a class="btn" href="rules-test.html">安全規則檢測</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
