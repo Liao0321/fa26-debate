@@ -289,3 +289,7 @@
 .slides-layer .slide-frame.on { visibility: visible; }
 /* 沒有要顯示簡報時：移到畫面外（保持正常大小，簡報才會正確排版、頁數也不會跑掉） */
 .slides-layer.is-off { visibility: hidden; left: -200vw !important; top: 0 !important; width: 72vw !important; height: 40.5vw !important; }
+
+/* 像素數字（SVG）：高度 0.8em、邊緣不反鋸齒 */
+.pixel-num { display: inline-block; height: 0.8em; vertical-align: middle; overflow: visible; }
+.d-timer, .w-timer { -webkit-font-smoothing: antialiased; }

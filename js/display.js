@@ -1,5 +1,6 @@
 // 投影畫面：依照主控台的即時狀態自動切換，不需要操作
 // 投影電腦請用管理員（或控制老師）帳號開這頁，然後按「全螢幕」
+import { setPixelText } from "./pixelnum.js";
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { startPage, login, db, COL, esc, watchSettings, teamName } from "./common.js";
 import {
@@ -451,8 +452,8 @@ function tick() {
   const warn = Number(data.settings?.bellWarnSec ?? 30);
 
   document.querySelectorAll("[data-timer]").forEach((el) => {
-    if (!t.hasTimer) { el.textContent = ""; return; }
-    el.textContent = fmtClock(t.remaining);
+    if (!t.hasTimer) { setPixelText(el, ""); return; }
+    setPixelText(el, fmtClock(t.remaining));
     el.classList.toggle("is-warn", t.remaining > 0 && t.remaining <= warn);
     el.classList.toggle("is-over", t.remaining <= 0);
     el.classList.toggle("is-frozen", t.done || (t.paused && !t.waiting));
