@@ -18,9 +18,14 @@
   --yellow-soft: #fff6d6;
   --red: #e5484d;
   --red-soft: #fde4e4;
-  /* 正反方顏色：全站固定 */
-  --pro: #2f7bea;  --pro-soft: #dcebff;   /* 正方：藍 */
-  --con: #e5484d;  --con-soft: #fde4e4;   /* 反方：紅 */
+  /* 正反方顏色：全站固定。想換配色只要改這兩組
+     --pro / --con       主色（色塊、按鈕、邊框）
+     --*-soft            淡色（卡片底）
+     --*-deep            深色（淺色底上的「字」，例如投影畫面的標題）
+     --*-on              放在主色色塊上的字的顏色
+     --*-light           硬幣內圈等裝飾 */
+  --pro: #ffc21a; --pro-soft: #fff1c2; --pro-deep: #8f6a00; --pro-on: #141414; --pro-light: #ffe17a; /* 正方：黃 */
+  --con: #2f9e5f; --con-soft: #dcf2e4; --con-deep: #1b6b3e; --con-on: #ffffff; --con-light: #7dcc9c; /* 反方：綠 */
   --line: 3px solid var(--ink);
   --shadow: 5px 5px 0 var(--ink);
   --shadow-sm: 3px 3px 0 var(--ink);
@@ -464,10 +469,10 @@ details.card summary { cursor: pointer; }
    ============================================================ */
 
 /* ---------- 正方／反方 ---------- */
-.pro-text { color: var(--pro); font-weight: 900; }
-.con-text { color: var(--con); font-weight: 900; }
-.badge-pro { background: var(--pro-soft); border-color: var(--pro); color: #164a99; }
-.badge-con { background: var(--con-soft); border-color: var(--con); color: #9b1c21; }
+.pro-text { color: var(--pro-deep); font-weight: 900; }
+.con-text { color: var(--con-deep); font-weight: 900; }
+.badge-pro { background: var(--pro-soft); border-color: var(--pro); color: var(--pro-deep); }
+.badge-con { background: var(--con-soft); border-color: var(--con); color: var(--con-deep); }
 .badge-orange { background: var(--orange-soft); }
 
 /* 題目卡：上午場、下午場 */
@@ -488,8 +493,8 @@ details.card summary { cursor: pointer; }
 .vs-row { display: grid; grid-template-columns: 1fr auto 1fr; border-top: var(--line); }
 .vs-side { padding: 10px 14px; font-weight: 900; }
 .vs-side small { display: block; font-weight: 700; font-size: 12px; opacity: 0.8; }
-.vs-side.pro { background: var(--pro-soft); color: #164a99; border-left: 8px solid var(--pro); }
-.vs-side.con { background: var(--con-soft); color: #9b1c21; border-right: 8px solid var(--con); text-align: right; }
+.vs-side.pro { background: var(--pro-soft); color: var(--pro-deep); border-left: 8px solid var(--pro); }
+.vs-side.con { background: var(--con-soft); color: var(--con-deep); border-right: 8px solid var(--con); text-align: right; }
 .vs-mark {
   display: grid;
   place-items: center;
@@ -564,8 +569,8 @@ details.card summary { cursor: pointer; }
 .ctl-btn { min-height: 56px; font-size: 18px; }
 .ctl-wide { grid-column: 1 / -1; width: 100%; }
 .ctl-btn.is-busy { opacity: 0.6; pointer-events: none; }
-.btn-pro { background: var(--pro); color: #fff; }
-.btn-con { background: var(--con); color: #fff; }
+.btn-pro { background: var(--pro); color: var(--pro-on); }
+.btn-con { background: var(--con); color: var(--con-on); }
 #extra .card { margin-bottom: 16px; }
 .vote-card .btn { min-height: 48px; }
 

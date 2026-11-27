@@ -85,8 +85,8 @@
   font-size: clamp(12px, 1.1vw, 22px);
   letter-spacing: 0.04em;
 }
-.d-pill.pro { background: var(--pro); color: #fff; }
-.d-pill.con { background: var(--con); color: #fff; }
+.d-pill.pro { background: var(--pro); color: var(--pro-on); }
+.d-pill.con { background: var(--con); color: var(--con-on); }
 
 .d-title {
   margin: 1.5vh 0 0;
@@ -94,8 +94,8 @@
   font-weight: 900;
   line-height: 1.2;
 }
-.d-title.pro { color: var(--pro); }
-.d-title.con { color: var(--con); }
+.d-title.pro { color: var(--pro-deep); }
+.d-title.con { color: var(--con-deep); }
 
 /* 超大倒數：至少佔畫面高度 20% */
 .d-timer {
@@ -128,8 +128,8 @@
 .d-players { display: grid; grid-template-columns: 1fr auto 1fr; gap: 2vw; width: 100%; margin-top: 3vh; align-items: stretch; }
 .d-team { border: var(--line); box-shadow: var(--shadow); background: var(--paper); text-align: left; }
 .d-team h3 { margin: 0; padding: 0.4em 0.8em; color: #fff; font-size: 1.2em; }
-.d-team.pro h3 { background: var(--pro); }
-.d-team.con h3 { background: var(--con); }
+.d-team.pro h3 { background: var(--pro); color: var(--pro-on); }
+.d-team.con h3 { background: var(--con); color: var(--con-on); }
 .d-team ol { margin: 0; padding: 0.6em 0.8em 0.6em 2.2em; font-size: 1.5em; font-weight: 900; }
 .d-team.pro ol { background: var(--pro-soft); }
 .d-team.con ol { background: var(--con-soft); }
@@ -182,8 +182,8 @@
   clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
   text-shadow: 0.05em 0.05em 0 var(--ink);
 }
-.coin-face.front { background: var(--pro); box-shadow: inset 0 0 0 1.4vh #6fa3f2; }
-.coin-face.back { background: var(--con); box-shadow: inset 0 0 0 1.4vh #f08b8e; transform: rotateY(180deg); }
+.coin-face.front { background: var(--pro); box-shadow: inset 0 0 0 1.4vh var(--pro-light); color: var(--pro-on); }
+.coin-face.back { background: var(--con); box-shadow: inset 0 0 0 1.4vh var(--con-light); color: var(--con-on); transform: rotateY(180deg); }
 @keyframes coin-idle { to { transform: rotateY(360deg); } }
 @keyframes coin-flip-pro {
   0% { transform: translateY(0) rotateY(0); }
@@ -196,8 +196,8 @@
   100% { transform: translateY(0) rotateY(2340deg); }
 }
 .coin-result { font-size: 2.4em; font-weight: 900; animation: pop-in 0.5s cubic-bezier(.2,.8,.3,1.4) both; }
-.coin-result.pro { color: var(--pro); }
-.coin-result.con { color: var(--con); }
+.coin-result.pro { color: var(--pro-deep); }
+.coin-result.con { color: var(--con-deep); }
 @keyframes pop-in { from { transform: scale(0.3); opacity: 0; } }
 
 /* ---------- 待機室（頒獎前） ---------- */

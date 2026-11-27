@@ -25,6 +25,12 @@ export function scheduleRows(segments) {
       showEnd: !!s.untilTime || s.durationSec > 0,
     });
   });
+  // 每一列的結束時間＝下一列的開始時間（老師的時間表每一輪都有留緩衝，例如第一輪 16 分鐘的內容排 20 分鐘）
+  const items = rows.filter((r) => r.kind === "item");
+  items.forEach((r, i) => {
+    const next = items[i + 1];
+    if (next && next.start > r.end) { r.end = next.start; r.showEnd = true; }
+  });
   return rows;
 }
 

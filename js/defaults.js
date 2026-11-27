@@ -50,8 +50,17 @@ export function makeSegment(o) {
 }
 
 // 上午場、下午場共用的模板
+// 老師時間表（Google Sheet）每一輪的開始時間，相對於該場開始（分鐘）。每一輪都留了緩衝時間
+//   第一輪 20 分、休息 30 分、第二輪 20 分、休息 20 分、第三輪 30 分 ＝ 2 小時
+const BLOCK_OFFSET = { r1: 0, break1: 20, r2: 50, break2: 70, r3: 90 };
+
+function addMinutes(hhmm, min) {
+  return fmtMinutes(toMinutes(hhmm) + min);
+}
+
 export function buildSession(s) {
   const S = (o) => makeSegment({ session: s, ...o });
+  const at = (k) => addMinutes(SESSIONS[s].start, BLOCK_OFFSET[k]);
   const g1 = "第一輪：發表觀點";
   const g2 = "第二輪：回應問題";
   const g3 = "第三輪：總結＋講評";
@@ -59,7 +68,7 @@ export function buildSession(s) {
   return [
     // ---------- 第一輪 ----------
     S({ id: `${s}-r1-intro`, round: 1, type: "host", group: g1, title: "主持人介紹選手與題目", durationSec: 60,
-      planStart: SESSIONS[s].start, music: "intro", showPlayers: true,
+      planStart: at("r1"), music: "intro", showPlayers: true,
       hostScript: "第一輪主持人開場：介紹題目、正反方 6 位選手，請選手起立揮手。" }),
     S({ id: `${s}-r1-pro`, round: 1, type: "speech", side: "pro", group: g1, title: "正方 ❶ 發表觀點", durationSec: 300,
       speakerFromRound: 1, showSlides: "pro", hostScript: "請正方一辯上台發表觀點，5 分鐘，台下邊聽邊做筆記。" }),
@@ -71,11 +80,11 @@ export function buildSession(s) {
       hostScript: "換反方三位選手向正方提問，2 分鐘。對手先不回答。" }),
     S({ id: `${s}-r1-announce`, round: 1, type: "host", group: g1, title: "宣布休息投票＋第二輪開始時間", durationSec: 60,
       hostScript: "宣布 30 分鐘休息：正方到小教室 B、反方到小教室 C；觀眾和評審掃 QR Code 做第一輪投票、留言。說出第二輪開始時間。" }),
-    S({ id: `${s}-r1-break`, round: 1, type: "break", group: "休息＋第 1 輪評分", title: "休息＋準備・第 1 輪評分", durationSec: 1800,
+    S({ id: `${s}-r1-break`, round: 1, type: "break", group: "休息＋第 1 輪評分", title: "休息＋準備・第 1 輪評分", durationSec: 1800, planStart: at("break1"),
       music: "break", openVote: { session: s, round: 1 } }),
 
     // ---------- 第二輪 ----------
-    S({ id: `${s}-r2-con-recap`, round: 2, type: "host", side: "con", group: g2, title: "主持人回顧反方論點與被問的問題", durationSec: 60,
+    S({ id: `${s}-r2-con-recap`, round: 2, type: "host", side: "con", group: g2, title: "主持人回顧反方論點與被問的問題", durationSec: 60, planStart: at("r2"),
       hostScript: "第二輪主持人開場：回顧上一輪反方的主張，以及正方問了反方什麼。" }),
     S({ id: `${s}-r2-con`, round: 2, type: "speech", side: "con", group: g2, title: "反方 ❷ 回應問題", durationSec: 300,
       speakerFromRound: 2, showSlides: "con", hostScript: "請反方二辯上台回應正方的問題，5 分鐘。" }),
@@ -87,11 +96,11 @@ export function buildSession(s) {
       hostScript: "宣讀投影上的觀眾留言，請雙方帶回小教室討論，在第三輪總結時回應。" }),
     S({ id: `${s}-r2-announce`, round: 2, type: "host", group: g2, title: "宣布休息投票＋第三輪開始時間", durationSec: 60,
       hostScript: "請大家掃 QR Code 做第二輪投票。20 分鐘休息，雙方選出第三輪總結的人。說出第三輪開始時間。" }),
-    S({ id: `${s}-r2-break`, round: 2, type: "break", group: "休息＋第 2 輪評分", title: "休息＋準備・第 2 輪評分", durationSec: 1200,
+    S({ id: `${s}-r2-break`, round: 2, type: "break", group: "休息＋第 2 輪評分", title: "休息＋準備・第 2 輪評分", durationSec: 1200, planStart: at("break2"),
       music: "break", openVote: { session: s, round: 2 } }),
 
     // ---------- 第三輪 ----------
-    S({ id: `${s}-r3-recap`, round: 3, type: "host", group: g3, title: "主持人回顧前兩輪＋觀眾留言", durationSec: 120,
+    S({ id: `${s}-r3-recap`, round: 3, type: "host", group: g3, title: "主持人回顧前兩輪＋觀眾留言", durationSec: 120, planStart: at("r3"),
       hostScript: "第三輪主持人開場：回顧正反方前兩輪的重點，以及觀眾最關心的提問。" }),
     S({ id: `${s}-r3-coin`, round: 3, type: "coin", group: g3, title: "猜硬幣決定總結順序", durationSec: 60,
       hostScript: "請正反方各一位代表上台猜硬幣，猜對的一方選先講或後講。結果請在主控台按下。" }),
@@ -120,7 +129,7 @@ export function buildDefaultRundown() {
     ...buildSession("am"),
     makeSegment({ id: "lunch", type: "lunch", title: "午餐", planStart: "12:00", durationSec: 3600, music: "lunch" }),
     ...buildSession("pm"),
-    makeSegment({ id: "waiting", type: "idle", title: "頒獎典禮即將開始", untilTime: "15:05", music: "idle", waitingRoom: true,
+    makeSegment({ id: "waiting", type: "idle", title: "頒獎典禮即將開始", planStart: "15:00", untilTime: "15:05", music: "idle", waitingRoom: true,
       hostScript: "待機畫面：倒數到頒獎典禮開始。" }),
     makeSegment({ id: "ceremony", type: "ceremony", title: "頒獎典禮", planStart: "15:05", durationSec: 1500 }),
   ];
