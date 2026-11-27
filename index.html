@@ -121,7 +121,7 @@
         <ul class="small" style="margin:12px 0 0;padding-left:1.2em">${dayPlan(profile)}</ul>
         <div class="entry-grid">
           ${entries.map((pg) => pageReady(pg)
-            ? `<a class="btn ${pg.id === "admin" || pg.id === "control" ? "btn-primary" : ""}" href="${pg.href}"><b>${esc(pg.label)}</b><small>${esc(pg.desc || "")}</small></a>`
+            ? `<a class="btn ${pg.id === "admin" || pg.id === "control" ? "btn-primary" : ""}" href="${pg.href}" ${pg.newTab ? 'target="_blank" rel="noopener"' : ""}><b>${esc(pg.label)}</b><small>${esc(pg.desc || "")}</small></a>`
             : `<span class="btn is-soon" aria-disabled="true"><b>${esc(pg.label)}</b><small>準備中</small></span>`).join("")}
         </div>`;
     }

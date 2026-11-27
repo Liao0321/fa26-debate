@@ -34,26 +34,78 @@ export function scheduleRows(segments) {
   return rows;
 }
 
+// 每一列屬於哪一種：三輪比賽是主角；休息、開場前的準備淡化；午餐、頒獎用不同的設計
+function rowKind(r, segments) {
+  const segs = r.indexes.map((i) => segments[i]);
+  const types = segs.map((s) => s.type);
+  if (types.includes("ceremony") || segs.some((s) => s.waitingRoom)) return "ceremony";
+  if (types.includes("lunch")) return "lunch";
+  if (types.every((t) => t === "break")) return "break";
+  if (segs.some((s) => s.round)) return "round";
+  return "minor";
+}
+
+const ROUND_NUM = { 1: "1", 2: "2", 3: "3" };
+
 // nowIndex：目前進行到第幾段（-1 ＝ 還沒開始）
 export function renderSchedule(segments, settings, nowIndex = -1) {
   const rows = scheduleRows(segments);
-  return `<ol class="timeline">${rows.map((r) => {
+  // 「頒獎典禮即將開始」（待機室）和「頒獎典禮」合成一張卡片
+  const merged = [];
+  rows.forEach((r) => {
+    if (r.kind === "item") r.type = rowKind(r, segments);
+    const last = merged[merged.length - 1];
+    if (r.type === "ceremony" && last?.type === "ceremony") {
+      last.waitStart = last.waitStart ?? last.start;
+      last.start = r.start; last.end = r.end;
+      last.title = r.title; last.indexes.push(...r.indexes);
+      return;
+    }
+    merged.push(r);
+  });
+  const nowBadge = `<span class="sc-now">進行中</span>`;
+  return `<ol class="sched">${merged.map((r) => {
     if (r.kind === "session") {
-      return `<li class="tl-session"><div class="tl-body">
-        <b>${esc(SESSIONS[r.session].label)}</b>
-        <span>題目：${esc(settings.topics?.[r.session] || "")}</span>
-      </div></li>`;
+      return `<li class="sc-session">
+        <span class="sc-session-name">${esc(SESSIONS[r.session].label)}</span>
+        <span class="sc-session-topic">${esc(settings.topics?.[r.session] || "")}</span>
+      </li>`;
     }
     const isNow = r.indexes.includes(nowIndex);
     const isPast = nowIndex >= 0 && Math.max(...r.indexes) < nowIndex;
+    const cls = `${isNow ? "is-now" : ""} ${isPast ? "is-past" : ""}`;
+    const time = `${fmtMinutes(r.start)}${r.showEnd ? `–${fmtMinutes(r.end)}` : ""}`;
     const mins = Math.round(r.end - r.start);
-    return `<li class="${isNow ? "is-now" : ""} ${isPast ? "is-past" : ""}">
-      <div class="tl-time">${fmtMinutes(r.start)}${r.showEnd ? `–${fmtMinutes(r.end)}` : ""}</div>
-      <div class="tl-body">
-        <div class="tl-main"><b>${esc(r.title)}</b></div>
-        ${isNow ? `<span class="badge badge-orange">進行中</span>` : ""}
-        ${mins > 0 && !isNow ? `<span class="tl-dur">${mins} 分鐘</span>` : ""}
-      </div>
+    const seg = segments[r.indexes[0]];
+    if (r.type === "round") {
+      const [, name = r.title] = r.title.split("：");
+      return `<li class="sc-round ${cls}">
+        <div class="sc-round-num"><small>ROUND</small>${ROUND_NUM[seg.round] || ""}</div>
+        <div class="sc-round-body">
+          <b>${esc(name)}</b>
+          <span class="sc-round-time">${time}・${mins} 分鐘</span>
+        </div>
+        ${isNow ? nowBadge : ""}
+      </li>`;
+    }
+    if (r.type === "lunch") {
+      return `<li class="sc-lunch ${cls}">
+        <span class="sc-emoji" aria-hidden="true">🍱</span>
+        <div><b>${esc(r.title)}</b><span>${time}</span></div>
+        ${isNow ? nowBadge : ""}
+      </li>`;
+    }
+    if (r.type === "ceremony") {
+      return `<li class="sc-ceremony ${cls}">
+        <span class="sc-emoji" aria-hidden="true">🏆</span>
+        <div><b>${esc(r.title)}</b>
+          <span>${fmtMinutes(r.start)} 開始${r.waitStart != null ? `・${fmtMinutes(r.waitStart)} 待機室開放` : ""}</span></div>
+        ${isNow ? nowBadge : ""}
+      </li>`;
+    }
+    // 休息、開場前的準備：細細一行
+    return `<li class="sc-minor ${r.type === "break" ? "sc-break" : ""} ${cls}">
+      <span class="sc-minor-time">${time}</span><span>${esc(r.title)}</span>${isNow ? nowBadge : ""}
     </li>`;
   }).join("")}</ol>`;
 }

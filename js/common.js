@@ -288,7 +288,7 @@ export const PAGES = [
   { id: "comments", href: "comments.html", label: "留言牆", desc: "留言、幫別人的留言按讚", stage: 5, show: (p) => !!p },
   { id: "team", href: "team.html", label: "選手頁", desc: "貼簡報連結、選發言人、我說完了", stage: 3, show: (p) => p && (p.team || p.isAdmin) },
   { id: "control", href: "control.html", label: "主控台", desc: "控制流程、計時、投票、留言", stage: 2, show: (p) => p && p.canControl },
-  { id: "display", href: "display.html", label: "投影畫面", desc: "投影電腦全螢幕開這頁", stage: 2, show: (p) => p && p.isAdmin },
+  { id: "display", href: "display.html", label: "投影畫面", desc: "投影電腦全螢幕開這頁（會開新分頁）", newTab: true, stage: 2, show: (p) => p && p.isAdmin },
   { id: "admin", href: "admin.html", label: "後台", desc: "名單、題目、組名、加權設定", stage: 1, show: (p) => p && p.isAdmin },
 ];
 
@@ -301,7 +301,7 @@ function renderHeader(active, profile, settings) {
   const header = document.getElementById("site-header");
   if (!header) return;
   const links = PAGES.filter((n) => pageReady(n) && (!n.show || n.show(profile)))
-    .map((n) => `<a href="${n.href}" class="${n.id === active ? "active" : ""}">${n.label}</a>`)
+    .map((n) => `<a href="${n.href}" ${n.newTab ? 'target="_blank" rel="noopener"' : ""} class="${n.id === active ? "active" : ""}">${n.label}</a>`)
     .join("");
   const user = profile
     ? `<div class="user-chip">

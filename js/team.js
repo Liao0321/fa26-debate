@@ -139,12 +139,23 @@ document.getElementById("save-slides").addEventListener("click", async () => {
   const url = urlInput.value.trim();
   if (url && !isSlidesUrl(url)) return toast("請貼 Google Slides 的網址（docs.google.com/presentation/…）", "error", 5000);
   try {
-    await updateDoc(doc(db, COL.teams, teamId), { slidesUrl: url, updatedAt: serverTimestamp() });
+    const ref = doc(db, COL.teams, teamId);
+    const data = { slidesUrl: url, updatedAt: serverTimestamp() };
+    // 管理員可以直接建立資料；選手只能修改已經存在的資料（老師儲存名單時會建立）
+    if (profile?.isAdmin) await setDoc(ref, data, { merge: true });
+    else await updateDoc(ref, data);
     toast(url ? "簡報連結已儲存" : "已清除簡報連結", "ok");
   } catch (e) {
-    toast(`儲存失敗：${e.message}`, "error", 6000);
+    toast(saveErrorText(e), "error", 8000);
   }
 });
+
+// 儲存失敗時，用看得懂的話說明原因
+function saveErrorText(e) {
+  if (e.code === "not-found") return "儲存失敗：這組的資料還沒建立。請老師到後台「名單」按一次「儲存名單」。";
+  if (e.code === "permission-denied") return "儲存失敗：沒有權限。可能是 Firebase 規則還沒更新，或你不是這一組的組員。";
+  return `儲存失敗：${e.message}`;
+}
 
 // ---------- 發言人 ----------
 let speakersDirty = false;
@@ -182,13 +193,18 @@ document.getElementById("save-speakers").addEventListener("click", async () => {
   try {
     // email 存在不公開的文件；名字存在公開的文件（投影畫面顯示用）。兩個一起寫入
     const batch = writeBatch(db);
-    batch.update(doc(db, COL.teams, teamId, "private", "info"), { speakers });
-    batch.update(doc(db, COL.teams, teamId), { speakerNames, updatedAt: serverTimestamp() });
+    if (profile?.isAdmin) {
+      batch.set(doc(db, COL.teams, teamId, "private", "info"), { speakers }, { merge: true });
+      batch.set(doc(db, COL.teams, teamId), { speakerNames, updatedAt: serverTimestamp() }, { merge: true });
+    } else {
+      batch.update(doc(db, COL.teams, teamId, "private", "info"), { speakers });
+      batch.update(doc(db, COL.teams, teamId), { speakerNames, updatedAt: serverTimestamp() });
+    }
     await batch.commit();
     speakersDirty = false;
     toast("發言人已儲存", "ok");
   } catch (e) {
-    toast(`儲存失敗：${e.message}`, "error", 6000);
+    toast(saveErrorText(e), "error", 8000);
   }
 });
 

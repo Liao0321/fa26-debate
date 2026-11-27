@@ -633,3 +633,75 @@ details.card summary { cursor: pointer; }
 .done-timer.is-over { color: var(--red); }
 .done-btn { width: 100%; min-height: 96px; font-size: 32px; }
 .done-ok { font-size: 22px; font-weight: 900; color: #1f8a3a; padding: 18px 0; }
+
+/* ---------- 賽程（重點：三輪比賽；休息淡化；午餐、頒獎特別設計） ---------- */
+.sched { list-style: none; margin: 0; padding: 0; }
+.sched > li { margin-bottom: 10px; }
+.sched .is-past { opacity: 0.5; }
+.sc-now {
+  margin-left: auto; flex: none;
+  padding: 2px 10px; background: var(--orange); color: var(--ink);
+  border: 2px solid var(--ink); font-weight: 800; font-size: 13px;
+}
+/* 場次標題：上午場／下午場＋題目 */
+.sc-session {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  margin: 26px 0 12px !important; padding-bottom: 8px;
+  border-bottom: 4px solid var(--ink);
+}
+.sc-session:first-child { margin-top: 0 !important; }
+.sc-session-name { font-size: 22px; font-weight: 900; color: var(--orange-deep); }
+.sc-session-topic { font-weight: 700; }
+/* 三輪比賽：主角 */
+.sc-round {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--paper); border: var(--line); box-shadow: var(--shadow-sm);
+  padding: 10px 14px 10px 10px;
+}
+.sc-round-num {
+  flex: none; width: 64px; height: 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--orange);
+  font-family: "Press Start 2P", monospace; font-size: 24px; line-height: 1;
+}
+.sc-round-num small { font-size: 8px; color: #fff; margin-bottom: 6px; letter-spacing: 1px; }
+.sc-round-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sc-round-body b { font-size: 20px; }
+.sc-round-time { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 700; }
+.sc-round.is-now { background: var(--orange-soft); box-shadow: 5px 5px 0 var(--orange-deep); }
+.sc-round.is-now .sc-round-num { background: var(--orange); color: var(--ink); }
+/* 休息、開場前：細細一行，不搶戲 */
+.sc-minor {
+  display: flex; align-items: center; gap: 12px;
+  padding: 2px 4px 2px 26px; color: var(--muted); font-size: 14px;
+  position: relative;
+}
+.sc-minor::before { /* 小圓點 */
+  content: ""; position: absolute; left: 10px; top: 50%;
+  width: 6px; height: 6px; margin-top: -3px; background: #c9bfb2;
+}
+.sc-break { margin: -2px 0 8px !important; }
+.sc-minor-time { font-variant-numeric: tabular-nums; min-width: 92px; }
+.sc-minor.is-now { color: var(--ink); font-weight: 800; }
+.sc-minor.is-now::before { background: var(--orange); }
+/* 午餐：暖色、虛線框 */
+.sc-lunch, .sc-ceremony {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+}
+.sc-lunch > div, .sc-ceremony > div { display: flex; flex-direction: column; gap: 2px; }
+.sc-lunch b, .sc-ceremony b { font-size: 18px; }
+.sc-emoji { font-size: 30px; line-height: 1; }
+.sc-lunch {
+  margin: 18px 0 !important;
+  background: repeating-linear-gradient(45deg, #fff8e6 0 10px, #fff1cc 10px 20px);
+  border: 3px dashed var(--ink);
+}
+.sc-lunch span:not(.sc-emoji):not(.sc-now) { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+/* 頒獎典禮：黑底金字 */
+.sc-ceremony {
+  margin-top: 22px !important;
+  background: var(--ink); color: #fff;
+  border: var(--line); box-shadow: 5px 5px 0 var(--yellow);
+}
+.sc-ceremony b { color: var(--yellow); font-size: 20px; }
+.sc-ceremony span:not(.sc-emoji):not(.sc-now) { color: #d8d0c4; font-variant-numeric: tabular-nums; }
