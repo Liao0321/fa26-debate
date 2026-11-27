@@ -282,9 +282,15 @@ async function saveRoster() {
     });
     removed.forEach((r) => ops.push((b) => b.delete(doc(db, COL.roster, r.email))));
     // 四組的組員名字（只存名字、不存 email），投影畫面介紹選手時用；任何人都能讀
+    // email 另外存在不公開的 private/info（只有該組組員和管理員讀得到），選手頁選發言人、「我說完了」的權限檢查會用到
     for (const t of TEAM_IDS) {
-      const members = list.filter((p) => p.category === t).map((p) => p.name || p.email.split("@")[0]);
+      const people = list.filter((p) => p.category === t);
+      const members = people.map((p) => p.name || p.email.split("@")[0]);
       ops.push((b) => b.set(doc(db, COL.teams, t), { members, membersUpdatedAt: serverTimestamp() }, { merge: true }));
+      ops.push((b) => b.set(doc(db, COL.teams, t, "private", "info"), {
+        members: people.map((p) => ({ email: p.email, name: p.name || p.email.split("@")[0] })),
+        memberEmails: people.map((p) => p.email),
+      }, { merge: true }));
     }
     for (let i = 0; i < ops.length; i += 400) {
       const batch = writeBatch(db);

@@ -1,7 +1,8 @@
 // 主控台：控制流程、計時、投票開關、猜硬幣
+import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 // 建議用老師的手機或平板開（投影電腦只開 display.html，簡報筆才不會按到這一頁）
 import {
-  startPage, login, esc, toast, confirmDialog, watchSettings,
+  startPage, login, db, COL, esc, toast, confirmDialog, watchSettings,
 } from "./common.js";
 import {
   startClockSync, watchRundown, watchLive, orderedRundown, currentIndex, timing, fmtClock, endTimeText,
@@ -16,6 +17,7 @@ let settings = null;
 let rundown = [];
 let state = null;
 let online = true;
+let teams = {};
 let started = false;
 
 startPage({
@@ -43,6 +45,11 @@ startPage({
       watchSettings((s) => { settings = s; renderAll(); });
       watchRundown((r) => { rundown = r; renderAll(); });
       watchLive((s, meta) => { state = s; online = meta.online; renderAll(); });
+      onSnapshot(collection(db, COL.teams), (snap) => {
+        teams = {};
+        snap.forEach((d) => { teams[d.id] = d.data(); });
+        renderAll();
+      });
       setInterval(tick, 250);
     }
   },
@@ -59,6 +66,12 @@ function segLabel(seg) {
   if (seg.round) parts.push(`第 ${seg.round} 輪`);
   parts.push(TYPE_LABEL[seg.type] || seg.type);
   return parts.join("・");
+}
+
+// 選手在選手頁選的發言人
+function speakerOf(seg) {
+  if (seg?.type !== "speech" || !seg.session || !seg.side || !seg.speakerFromRound) return "";
+  return teams[`${seg.session}_${seg.side}`]?.speakerNames?.[`r${seg.speakerFromRound}`] || "";
 }
 
 function sideBadge(seg) {
@@ -85,9 +98,10 @@ function renderNow() {
   box.innerHTML = `
     <div class="row"><span class="tag">NOW ${i + 1} / ${L.length}</span>${sideBadge(seg)}<span class="muted small">${esc(segLabel(seg))}</span><span class="spacer"></span>${connDot()}</div>
     <h2 class="now-title">${esc(seg.title)}</h2>
+    ${seg.type === "speech" ? `<p style="margin:4px 0 0">🎤 發言人：<b>${esc(speakerOf(seg) || "（選手還沒選）")}</b></p>` : ""}
     <div class="now-timer" id="now-timer"></div>
     <div class="now-status" id="now-status"></div>
-    <p class="now-next"><b>下一項：</b>${next ? esc(next.title) : "（已經是最後一段）"}</p>
+    <p class="now-next"><b>下一項：</b>${next ? esc(next.title) + (speakerOf(next) ? `（${esc(speakerOf(next))}）` : "") : "（已經是最後一段）"}</p>
     ${seg.hostScript ? `<div class="host-script"><b>主持人提示</b><br>${esc(seg.hostScript)}</div>` : ""}`;
   tick();
 }

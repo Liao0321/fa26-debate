@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>選手頁｜FA26 辯論比賽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container" style="max-width:760px">
+    <div id="gate" class="card"><p class="muted">載入中…</p></div>
+
+    <div id="team-area" class="hidden">
+      <div id="admin-tabs" class="row hidden" style="margin-bottom:12px"></div>
+
+      <!-- 我說完了（輪到我發言時才出現） -->
+      <section id="done-box" class="hidden"></section>
+
+      <section class="card team-head" id="team-head"></section>
+
+      <section class="section">
+        <h2 class="section-title">我們的簡報</h2>
+        <div class="card">
+          <ol class="small" style="margin-top:0;padding-left:1.3em">
+            <li>在 Google Slides 按右上角「<b>共用</b>」→「一般存取權」改成「<b>國立政治大學（g.nccu.edu.tw）</b>」或「<b>知道連結的任何人</b>」，角色選「檢視者」。</li>
+            <li>複製瀏覽器網址列的網址（像 <code>https://docs.google.com/presentation/d/……/edit</code>），貼到下面，按「儲存」。</li>
+            <li>之後修改簡報內容<b>不用</b>重新貼，投影畫面會顯示最新版本。</li>
+          </ol>
+          <div class="field">
+            <label for="slides-url">Google Slides 網址</label>
+            <input type="text" id="slides-url" inputmode="url" placeholder="https://docs.google.com/presentation/d/……/edit">
+            <div class="hint" id="slides-hint"></div>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary" id="save-slides" type="button">儲存簡報連結</button>
+            <a class="btn hidden" id="open-slides" target="_blank" rel="noopener">在新分頁打開</a>
+          </div>
+          <div class="slides-preview hidden" id="slides-preview"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">每一輪的發言人</h2>
+        <div class="card">
+          <p class="small muted" style="margin-top:0">每一輪休息時，在這裡選下一輪上台的人。投影畫面會顯示名字，輪到他發言時，他的手機會出現「我說完了」按鈕。</p>
+          <div id="speakers"></div>
+          <button class="btn btn-primary" id="save-speakers" type="button">儲存發言人</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="js/team.js"></script>
+</body>
+</html>

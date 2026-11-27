@@ -6,7 +6,7 @@
 // 每台裝置自己算：剩餘 = remainingAtStart − (伺服器現在時間 − startedAt)
 // ============================================================
 import {
-  doc, onSnapshot, setDoc, getDocFromServer, serverTimestamp,
+  doc, onSnapshot, setDoc, updateDoc, getDocFromServer, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth, COL, configReady, isSchoolEmail } from "./common.js";
@@ -177,6 +177,9 @@ export function enterSegment(list, index, state) {
     speakerDone: false,
     speakerDoneAt: null,
     voteOpen: voteFor(seg, state),
+    // 誰可以按「我說完了」：哪一組（例如 am_pro）的第幾輪發言人；不是選手發言的段落就是 null
+    speakerTeam: seg.type === "speech" && seg.session && seg.side ? `${seg.session}_${seg.side}` : null,
+    speakerRound: seg.type === "speech" && seg.speakerFromRound ? seg.speakerFromRound : null,
   });
 }
 
@@ -225,4 +228,9 @@ export function setSpeakerDone(state, done) {
     remainingAtStart: t.hasTimer ? t.remaining : null,
     startedAt: serverTimestamp(),
   });
+}
+
+// 發言人本人在選手頁按「我說完了」（安全規則只允許改這兩個欄位）
+export function speakerPressDone() {
+  return updateDoc(stateRef(), { speakerDone: true, speakerDoneAt: serverTimestamp() });
 }

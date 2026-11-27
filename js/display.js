@@ -7,6 +7,7 @@ import {
 } from "./live.js";
 import { SESSIONS, SIDE_LABEL, TYPE_LABEL, fmtMinutes } from "./defaults.js";
 import { SoundBoard } from "./sound.js";
+import { slidesEmbedUrl } from "./slides.js";
 
 const stage = document.getElementById("stage");
 const toolbar = document.getElementById("toolbar");
@@ -75,10 +76,17 @@ function render() {
   const viewKey = JSON.stringify([
     seg?.id, seg?.title, next?.title, data.state?.coinFirst, data.state?.coinAt, data.state?.voteOpen,
     data.settings.topics, data.settings.teamNames, data.settings.eventName,
-    seg?.showPlayers ? data.teams : null,
+    data.teams,
   ]);
+  // 簡報：先把「這一場」（或下一段所屬那一場）的兩份簡報載好
+  ensureSlides(seg?.session || next?.session || null);
+
   if (viewKey === lastViewKey) return;
   lastViewKey = viewKey;
+
+  const slideTeam = seg?.showSlides && seg.session ? `${seg.session}_${seg.showSlides}` : null;
+  if (slideTeam && slideFrames[slideTeam]) return renderSlidesSegment(seg, next, slideTeam);
+  showSlides(null);
 
   if (!seg) return renderStandby();
   if (seg.waitingRoom) return renderWaiting(seg);
@@ -96,9 +104,16 @@ function renderTopline(seg) {
   document.getElementById("d-conn").title = data.online ? "已連線" : "離線中：倒數照常進行，連線後自動同步";
 }
 
+// 這一段的發言人名字（選手在選手頁選的）
+function speakerName(seg) {
+  if (!seg || seg.type !== "speech" || !seg.session || !seg.side || !seg.speakerFromRound) return "";
+  return data.teams[`${seg.session}_${seg.side}`]?.speakerNames?.[`r${seg.speakerFromRound}`] || "";
+}
+const withSpeaker = (seg) => seg ? `${esc(seg.title)}${speakerName(seg) ? `（${esc(speakerName(seg))}）` : ""}` : "";
+
 const timerHtml = (cls = "") => `<div class="d-timer ${cls}" data-timer></div>`;
 const statusHtml = () => `<div class="d-status" data-status></div>`;
-const nextHtml = (next) => next ? `<div class="d-next"><b>下一項：</b>${esc(next.title)}</div>` : "";
+const nextHtml = (next) => next ? `<div class="d-next"><b>下一項：</b>${withSpeaker(next)}</div>` : "";
 
 function pillText(seg) {
   const parts = [];
@@ -112,7 +127,9 @@ function renderSegment(seg, next) {
   const side = seg.side || "";
   let center = `
     <span class="d-pill ${side}">${esc(pillText(seg))}</span>
-    <h1 class="d-title ${side}">${esc(seg.title)}</h1>`;
+    <h1 class="d-title ${side}">${esc(seg.title)}</h1>
+    ${speakerName(seg) ? `<div class="d-speaker">🎤 ${esc(speakerName(seg))}</div>` : ""}`;
+  if (seg.showSlides) center += `<div class="d-muted small">本組未提供簡報</div>`;
   let panel = "";
 
   if (seg.showPlayers && seg.session) {
@@ -183,6 +200,108 @@ function drawQr() {
   qr.addData(voteUrl());
   qr.make();
   box.innerHTML = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+}
+
+// ============================================================
+// 簡報
+// ============================================================
+const slideLayer = document.getElementById("slides-layer");
+const slideFrames = {};   // teamId → <iframe>
+let slidesSession = null;
+let shownSlides = null;
+
+// 同一場的兩份簡報一開始就載入；網址沒變就不重新載入
+function ensureSlides(session) {
+  if (!session) return;
+  if (session !== slidesSession) {
+    // 換場了（例如午餐後）：移除上一場的簡報
+    for (const id of Object.keys(slideFrames)) {
+      if (!id.startsWith(`${session}_`)) { slideFrames[id].remove(); delete slideFrames[id]; }
+    }
+    slidesSession = session;
+  }
+  for (const side of ["pro", "con"]) {
+    const id = `${session}_${side}`;
+    const src = slidesEmbedUrl(data.teams[id]?.slidesUrl || "");
+    const f = slideFrames[id];
+    if (!src) {
+      if (f) { f.remove(); delete slideFrames[id]; }
+      continue;
+    }
+    if (f && f.dataset.src === src) continue;
+    if (f) f.remove();
+    const iframe = document.createElement("iframe");
+    iframe.dataset.src = src;
+    iframe.src = src;
+    iframe.title = `${SIDE_LABEL[side]}簡報`;
+    iframe.allowFullscreen = true;
+    iframe.className = "slide-frame";
+    slideLayer.appendChild(iframe);
+    slideFrames[id] = iframe;
+    if (shownSlides === id) focusSlides();
+  }
+}
+
+function showSlides(teamId) {
+  shownSlides = teamId;
+  for (const [id, f] of Object.entries(slideFrames)) f.classList.toggle("on", id === teamId);
+  // 不用 display:none 藏起來（簡報在 0×0 的框裡載入可能會版面錯亂），改成移到畫面外
+  slideLayer.classList.toggle("is-off", !teamId);
+  if (teamId) { placeSlides(); focusSlides(); }
+}
+
+// 讓簡報筆的按鍵（方向鍵、PageDown）送進簡報：把鍵盤焦點交給簡報。簡報可能還在載入，多試幾次
+function focusSlides() {
+  const id = shownSlides;
+  [0, 150, 600, 1500, 3000].forEach((ms) => setTimeout(() => {
+    if (shownSlides !== id || !slideFrames[id]) return;
+    try {
+      slideFrames[id].focus();
+      slideFrames[id].contentWindow?.focus();
+    } catch (e) {
+      console.warn("無法把焦點交給簡報", e);
+    }
+  }, ms));
+}
+
+// 簡報圖層對齊左邊的 16:9 區域
+function placeSlides() {
+  const area = document.getElementById("slides-area");
+  if (!area || !shownSlides) return;
+  const r = area.getBoundingClientRect();
+  let w = r.width;
+  let h = w * 9 / 16;
+  if (h > r.height) { h = r.height; w = h * 16 / 9; }
+  Object.assign(slideLayer.style, {
+    left: `${r.left + (r.width - w) / 2}px`,
+    top: `${r.top + (r.height - h) / 2}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+  });
+}
+window.addEventListener("resize", placeSlides);
+document.addEventListener("fullscreenchange", () => { setTimeout(placeSlides, 100); focusSlides(); });
+
+function renderSlidesSegment(seg, next, teamId) {
+  const side = seg.showSlides;
+  const name = speakerName(seg);
+  stage.innerHTML = `
+    <div class="d-band ${side}"></div>
+    <div class="d-main with-slides">
+      <div class="d-slides-area" id="slides-area"></div>
+      <aside class="d-info-col">
+        <div class="d-side-head ${side}">
+          <span>${SIDE_LABEL[side]}｜${esc(teamName(teamId, data.settings))}</span>
+        </div>
+        <h1 class="d-info-title">${esc(seg.title)}</h1>
+        ${name ? `<div class="d-speaker">🎤 ${esc(name)}</div>` : ""}
+        ${timerHtml("in-col")}
+        ${statusHtml()}
+        ${next ? `<div class="d-next d-next-col"><b>下一項</b><br>${withSpeaker(next)}</div>` : ""}
+      </aside>
+    </div>`;
+  showSlides(teamId);
+  tick();
 }
 
 // ---------- 還沒開始 ----------
@@ -376,6 +495,7 @@ function enableSound() {
   b.textContent = "🔊 音效已啟用";
   b.disabled = true;
   keepAwake();
+  focusSlides(); // 點按鈕時焦點會跑到頁面上，交回給簡報
 }
 gate.querySelector("button").addEventListener("click", enableSound);
 document.getElementById("sound-btn").addEventListener("click", enableSound);
@@ -388,7 +508,9 @@ function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.();
 }
-document.getElementById("fullscreen").addEventListener("click", toggleFullscreen);
+document.getElementById("fullscreen").addEventListener("click", () => { toggleFullscreen(); focusSlides(); });
+// 不小心點到投影畫面（不是簡報）時，焦點也交回給簡報
+document.addEventListener("click", (e) => { if (!e.target.closest("input, button")) focusSlides(); });
 document.addEventListener("keydown", (e) => {
   if (e.target.closest("input, textarea, select")) return;
   if (e.key === "f" || e.key === "F") toggleFullscreen();

@@ -266,3 +266,27 @@
 .d-side-panel { width: 26vw; }
 .d-qr { width: min(100%, 42vh); margin: 0 auto; }
 .waiting > :not(.w-sparkle) { position: relative; z-index: 1; }
+
+/* ---------- 簡報版面：左邊約 75% 是簡報，右邊是資訊欄 ---------- */
+.d-main.with-slides { padding: 2vh 1.5vw 2vh 1.5vw; gap: 1.5vw; }
+.d-slides-area { flex: 1; min-width: 0; }
+.d-info-col { flex: none; width: 23vw; display: flex; flex-direction: column; justify-content: center; gap: 1.6vh; text-align: center; }
+.d-side-head { padding: 0.4em 0.6em; font-weight: 900; font-size: 1.1em; border: var(--line); }
+.d-side-head.pro { background: var(--pro); color: var(--pro-on); }
+.d-side-head.con { background: var(--con); color: var(--con-on); }
+.d-info-title { margin: 0; font-size: clamp(22px, 2.4vw, 50px); line-height: 1.25; font-weight: 900; }
+.d-speaker { font-size: 1.5em; font-weight: 900; }
+.d-timer.in-col { font-size: min(13vh, 6.4vw); margin: 0; }
+.d-next-col { margin-top: 0; font-size: 0.85em; }
+
+.slides-layer {
+  position: fixed;
+  z-index: 10;
+  background: #111;
+  border: var(--line);
+  box-shadow: var(--shadow);
+}
+.slides-layer .slide-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; visibility: hidden; }
+.slides-layer .slide-frame.on { visibility: visible; }
+/* 沒有要顯示簡報時：移到畫面外（保持正常大小，簡報才會正確排版、頁數也不會跑掉） */
+.slides-layer.is-off { visibility: hidden; left: -200vw !important; top: 0 !important; width: 72vw !important; height: 40.5vw !important; }
