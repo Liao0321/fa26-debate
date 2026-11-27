@@ -122,14 +122,19 @@ function tick() {
     status.textContent = "這一段不倒數";
   } else {
     el.textContent = fmtClock(t.remaining);
-    el.className = `now-timer ${t.remaining <= 0 ? "is-over" : t.remaining <= warn ? "is-warn" : ""} ${t.done || t.paused ? "is-frozen" : ""}`;
+    el.className = `now-timer ${t.remaining <= 0 ? "is-over" : t.remaining <= warn ? "is-warn" : ""} ${t.done || (t.paused && !t.waiting) ? "is-frozen" : ""}`;
     const seg = cur();
     const endText = ["break", "lunch", "idle"].includes(seg?.type) && t.remaining > 0 ? `・預計 ${endTimeText(t)} 結束` : "";
-    status.textContent = t.done ? "✓ 發言完畢（等你按下一項）" : t.paused ? "⏸ 暫停中" : t.remaining <= 0 ? "時間到！（不會自動跳下一段）" : `倒數中${endText}`;
+    status.textContent = t.done ? "✓ 發言完畢（等你按下一項）" : t.waiting ? "等待開始：選手準備好後按「▶ 開始計時」" : t.paused ? "⏸ 暫停中" : t.remaining <= 0 ? "時間到！（不會自動跳下一段）" : `倒數中${endText}`;
   }
   // 暫停按鈕的文字
   const pb = document.querySelector('[data-act="pause"]');
-  if (pb) pb.textContent = state?.paused ? "▶ 繼續" : "⏸ 暫停";
+  if (pb) {
+    const waiting = timing(state).waiting;
+    pb.textContent = waiting ? "▶ 開始計時" : state?.paused ? "▶ 繼續" : "⏸ 暫停";
+    pb.classList.toggle("btn-primary", !!waiting);
+    pb.classList.toggle("is-pulse", !!waiting);
+  }
 }
 
 // ---------- 按鈕 ----------

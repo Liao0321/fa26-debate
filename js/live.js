@@ -124,6 +124,7 @@ export function timing(state) {
     hasTimer: true,
     remaining,
     paused: !!state.paused,
+    waiting: !!state.paused && !!state.waitingStart && !state.speakerDone, // 還沒按「開始計時」
     done: !!state.speakerDone,
     running: !state.paused && !state.speakerDone,
   };
@@ -165,15 +166,25 @@ function voteFor(seg, state) {
 }
 
 // 進入某一段：重新計時；依照段落設定自動開放或關閉投票
+// 選手上台的段落（發表、提問）換過去時先不倒數，等主控台按「開始計時」
+// （老師的時間表有抓遞麥克風、走上台的緩衝）
+export function waitsForStart(seg) {
+  if (!seg || initialRemaining(seg) == null) return false;
+  if (typeof seg.waitStart === "boolean") return seg.waitStart;
+  return seg.type === "speech" || seg.type === "cross";
+}
+
 export function enterSegment(list, index, state) {
   const seg = list[index];
   if (!seg) return Promise.resolve();
+  const wait = waitsForStart(seg);
   return liveUpdate({
     index,
     segmentId: seg.id,
     startedAt: serverTimestamp(),
     remainingAtStart: initialRemaining(seg),
-    paused: false,
+    paused: wait,
+    waitingStart: wait,
     speakerDone: false,
     speakerDoneAt: null,
     voteOpen: voteFor(seg, state),
@@ -191,7 +202,7 @@ export function pause(state) {
 
 export function resume(state) {
   if (!state?.paused) return Promise.resolve();
-  const patch = { paused: false, startedAt: serverTimestamp() };
+  const patch = { paused: false, waitingStart: false, startedAt: serverTimestamp() };
   if (state.speakerDone) patch.speakerDoneAt = serverTimestamp();
   return liveUpdate(patch);
 }
@@ -208,10 +219,12 @@ export function adjust(state, delta) {
 }
 
 export function restart(seg) {
+  const wait = waitsForStart(seg);
   return liveUpdate({
     startedAt: serverTimestamp(),
     remainingAtStart: initialRemaining(seg),
-    paused: false,
+    paused: wait,
+    waitingStart: wait,
     speakerDone: false,
     speakerDoneAt: null,
   });

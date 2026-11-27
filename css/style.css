@@ -705,3 +705,7 @@ details.card summary { cursor: pointer; }
 }
 .sc-ceremony b { color: var(--yellow); font-size: 20px; }
 .sc-ceremony span:not(.sc-emoji):not(.sc-now) { color: #d8d0c4; font-variant-numeric: tabular-nums; }
+
+/* 主控台：等待「開始計時」時，按鈕閃一下提醒 */
+.ctl-btn.is-pulse { animation: ctl-pulse 1.2s steps(2) infinite; }
+@keyframes ctl-pulse { 50% { background: var(--yellow); } }

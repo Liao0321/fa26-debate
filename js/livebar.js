@@ -25,7 +25,7 @@ export function mountLiveBar({ onChange } = {}) {
     const t = timing(state);
     const el = bar.querySelector(".lb-time");
     if (!t.hasTimer) { el.textContent = ""; return; }
-    el.textContent = t.done ? "✓ 發言完畢" : `${t.paused ? "⏸ " : "剩 "}${fmtClock(t.remaining)}`;
+    el.textContent = t.done ? "✓ 發言完畢" : `${t.waiting ? "準備 " : t.paused ? "⏸ " : "剩 "}${fmtClock(t.remaining)}`;
     el.classList.toggle("is-over", t.remaining <= 0 && !t.done);
   };
   startClockSync();

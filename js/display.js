@@ -455,11 +455,11 @@ function tick() {
     el.textContent = fmtClock(t.remaining);
     el.classList.toggle("is-warn", t.remaining > 0 && t.remaining <= warn);
     el.classList.toggle("is-over", t.remaining <= 0);
-    el.classList.toggle("is-frozen", t.done || t.paused);
+    el.classList.toggle("is-frozen", t.done || (t.paused && !t.waiting));
   });
   document.querySelectorAll("[data-status]").forEach((el) => {
     el.className = `d-status ${t.done ? "done" : ""}`;
-    el.textContent = t.done ? "✓ 發言完畢" : t.paused ? "⏸ 暫停" : t.hasTimer && t.remaining <= 0 ? "時間到！" : "";
+    el.textContent = t.done ? "✓ 發言完畢" : t.waiting ? "準備中…" : t.paused ? "⏸ 暫停" : t.hasTimer && t.remaining <= 0 ? "時間到！" : "";
   });
   document.querySelectorAll("[data-endinfo]").forEach((el) => {
     const label = seg?.type === "lunch" ? "下午場開始" : "下一段開始";
