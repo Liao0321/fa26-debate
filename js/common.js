@@ -30,12 +30,13 @@ export const COL = {
   votes: "debate_votes",       // 評分
   comments: "debate_comments", // 留言
   awards: "debate_awards",     // MVP
+  clock: "debate_clock",       // 校時用的暫存文件（每人一份）
 };
 
 // ------------------------------------------------------------
 // 目前已經完成到第幾個開發階段：還沒做好的頁面，選單和首頁會顯示「準備中」
 // ------------------------------------------------------------
-export const BUILT_STAGE = 1;
+export const BUILT_STAGE = 2;
 
 // ---------- 小工具 ----------
 export function esc(s) {

@@ -182,6 +182,11 @@ service cloud.firestore {
       return isOwnerAdmin() || (dHasRoster() && dRoster().get('isAdmin', false) == true);
     }
 
+    // 控制老師（主控台）：管理員，或名單上類別是「控制老師」的人
+    function dCanControl() {
+      return dIsAdmin() || (dHasRoster() && dRoster().get('canControl', false) == true);
+    }
+
     // debate_config/settings（活動設定）、debate_config/rundown（流程）：任何人可讀，只有管理員可改
     match /debate_config/{docId} {
       allow read: if true;
@@ -192,6 +197,28 @@ service cloud.firestore {
     match /debate_roster/{email} {
       allow read: if dIsAdmin() || (isSchool() && email == myEmail());
       allow write: if dIsAdmin();
+    }
+
+    // debate_teams/{am_pro|am_con|pm_pro|pm_con}：組員名字（不含 email）、簡報連結、發言人
+    // 任何人可讀；目前只有管理員可改（第 3 階段會開放組員改自己組的簡報和發言人）
+    match /debate_teams/{teamId} {
+      allow read: if true;
+      allow write: if dIsAdmin()
+        && teamId in ['am_pro', 'am_con', 'pm_pro', 'pm_con'];
+    }
+
+    // debate_live/state：即時狀態（現在第幾段、倒數、投票開關）。任何人可讀，只有控制者可改
+    match /debate_live/{docId} {
+      allow read: if true;
+      allow write: if dCanControl() && docId == 'state';
+    }
+
+    // debate_clock/{uid}：校時用。每人只能寫自己的，而且只能寫「伺服器現在的時間」
+    match /debate_clock/{uid} {
+      allow read: if isSchool() && request.auth.uid == uid;
+      allow write: if isSchool() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['t'])
+        && request.resource.data.t == request.time;
     }
   }
 }

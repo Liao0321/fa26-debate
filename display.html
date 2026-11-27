@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>投影畫面｜FA26 辯論比賽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/display.css">
+  <!-- QR code 產生器（投票頁的 QR code） -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+</head>
+<body class="display-body">
+  <!-- 投影電腦全螢幕開這頁，不需要操作；控制請用手機開 control.html -->
+  <div id="toolbar" class="screen-toolbar">
+    <div class="toolbar-group">
+      <b id="tb-name">投影畫面</b>
+      <span class="toolbar-hint">滑鼠不動 3 秒後工具列會自動隱藏・F 全螢幕</span>
+    </div>
+    <div class="toolbar-group">
+      <button class="btn btn-small" id="sound-btn" type="button">🔊 啟用音效</button>
+      <label class="toolbar-hint vol">音量 <input type="range" id="volume" min="0" max="1" step="0.05"></label>
+      <button class="btn btn-small btn-primary" id="fullscreen" type="button">⛶ 全螢幕</button>
+    </div>
+  </div>
+
+  <div class="d-topline">
+    <span id="d-context"></span>
+    <span class="spacer"></span>
+    <span id="d-clock" class="d-clock"></span>
+    <span id="d-conn" class="d-conn" title="連線狀態"></span>
+  </div>
+
+  <main id="stage" class="d-stage">
+    <div class="d-center"><p class="d-muted">載入中…</p></div>
+  </main>
+
+  <div id="sound-gate" class="sound-gate hidden">
+    <button class="btn btn-primary btn-big" type="button">🔊 點一下啟用音效</button>
+    <p>瀏覽器規定要先點一下，才能自動播放音樂和鈴聲</p>
+  </div>
+
+  <script type="module" src="js/display.js"></script>
+</body>
+</html>

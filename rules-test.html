@@ -159,6 +159,49 @@
       },
     ];
 
+    // 即時狀態：寫回和目前一樣的「目前段落」，萬一沒擋住也不會改變畫面
+    async function rewriteLive() {
+      const snap = await getDoc(doc(db, COL.live, "state"));
+      const cur = snap.exists() ? snap.data().index ?? null : null;
+      await setDoc(doc(db, COL.live, "state"), { index: cur }, { merge: true });
+    }
+    TESTS.push(
+      {
+        name: "任何人：讀取即時狀態",
+        expect: "allow",
+        when: () => true,
+        run: () => getDoc(doc(db, COL.live, "state")),
+      },
+      {
+        name: "非控制老師：修改即時狀態（換段落、暫停）",
+        expect: "deny",
+        when: (c) => !c.profile.canControl || "請用不是控制老師的帳號測",
+        run: rewriteLive,
+      },
+      {
+        name: "控制老師：修改即時狀態（寫回一樣的值）",
+        expect: "allow",
+        when: (c) => (c.school && c.profile.canControl) || "請用控制老師或管理員帳號測",
+        run: rewriteLive,
+      },
+      {
+        name: "非管理員：修改組員名單",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        run: async () => {
+          const snap = await getDoc(doc(db, COL.teams, "am_pro"));
+          await setDoc(doc(db, COL.teams, "am_pro"), { members: snap.exists() ? snap.data().members || [] : [] }, { merge: true });
+        },
+      },
+      {
+        name: "非管理員：修改當天流程",
+        expect: "deny",
+        when: (c) => (c.school && !c.profile.isAdmin) || "請用非管理員的學校帳號測",
+        // 只寫一個沒有用到的欄位，萬一沒擋住也不會改到流程
+        run: () => setDoc(doc(db, COL.config, "rundown"), { rulesTestProbe: null }, { merge: true }),
+      },
+    );
+
     async function buildContext() {
       const school = isSchoolEmail(user.email) && user.emailVerified;
       const email = user.email.toLowerCase();
@@ -167,7 +210,7 @@
         const snap = await getDoc(doc(db, COL.roster, email)).catch(() => null);
         roster = snap?.exists() ? snap.data() : null;
       }
-      const profile = school ? buildProfile(user, roster) : { email, account: accountOf(email), label: "非學校帳號", isAdmin: false };
+      const profile = school ? buildProfile(user, roster) : { email, account: accountOf(email), label: "非學校帳號", isAdmin: false, canControl: false };
       return { school, email, profile };
     }
 

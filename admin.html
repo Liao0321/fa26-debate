@@ -18,6 +18,7 @@
     <div id="admin-area" class="hidden">
       <nav class="jump-links">
         <a href="#sec-settings">活動設定</a>
+        <a href="#sec-rundown">流程</a>
         <a href="#sec-roster">名單</a>
         <a href="#sec-current">目前名單</a>
         <a href="#sec-tools">工具</a>
@@ -63,6 +64,29 @@
           <p class="muted small">倍數只算「該場」的主持人和評審；他們在另一場是一般觀眾（×1）。</p>
 
           <button class="btn btn-primary btn-big" id="save-settings" type="button">儲存活動設定</button>
+        </div>
+      </section>
+
+      <section class="section" id="sec-rundown">
+        <h2 class="section-title">當天流程</h2>
+        <div class="card">
+          <p style="margin-top:0">主控台和投影畫面都照這份流程走。可以改標題、時長、音樂、主持人提示，也可以調整順序、複製或刪除段落。</p>
+          <ul class="small muted">
+            <li><b>時長</b>填分鐘（可以有小數，例如 1.5）；填 0 ＝不倒數。<b>倒數到</b>填時間（例如 10:00），有填就不看時長。</li>
+            <li><b>預定開始</b>只影響首頁賽程上顯示的時間；實際上一律等主控台按「下一項」才換段落。</li>
+            <li>「複製」會在下面多一段一樣的段落（類型、場次、投票設定都一樣），再改標題就好。</li>
+            <li>⚠️ 比賽進行中請不要刪除或移動「正在進行」的那一段。</li>
+          </ul>
+          <div class="row" style="margin-bottom:12px">
+            <span id="rundown-source" class="badge"></span>
+            <span class="spacer"></span>
+            <button class="btn" id="reset-rundown" type="button">還原成預設流程</button>
+          </div>
+          <div id="rundown-editor"></div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn btn-primary btn-big" id="save-rundown" type="button">儲存流程</button>
+            <span class="muted small" id="rundown-dirty"></span>
+          </div>
         </div>
       </section>
 

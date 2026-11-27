@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS = {
 //   planStart：預定開始時間（只用來排首頁賽程，實際以主控台按「下一項」為準）
 //   group：首頁賽程把同一組的段落合成一列
 // ------------------------------------------------------------
-function seg(o) {
+export function makeSegment(o) {
   return {
     session: null, round: null, type: "idle", side: null, title: "",
     durationSec: 0, untilTime: null, planStart: null, group: null,
@@ -51,7 +51,7 @@ function seg(o) {
 
 // 上午場、下午場共用的模板
 export function buildSession(s) {
-  const S = (o) => seg({ session: s, ...o });
+  const S = (o) => makeSegment({ session: s, ...o });
   const g1 = "第一輪：發表觀點";
   const g2 = "第二輪：回應問題";
   const g3 = "第三輪：總結＋講評";
@@ -113,16 +113,16 @@ export function buildSession(s) {
 
 export function buildDefaultRundown() {
   return [
-    seg({ id: "setup", type: "idle", title: "場地布置", planStart: "08:30", untilTime: "09:00", music: "idle", showTopics: true }),
-    seg({ id: "rules", type: "host", title: "規則講解、分組", planStart: "09:00", durationSec: 1200 }),
-    seg({ id: "prep", type: "idle", title: "準備階段", planStart: "09:20", untilTime: "10:00", music: "idle", showTopics: true,
+    makeSegment({ id: "setup", type: "idle", title: "場地布置", planStart: "08:30", untilTime: "09:00", music: "idle", showTopics: true }),
+    makeSegment({ id: "rules", type: "host", title: "規則講解、分組", planStart: "09:00", durationSec: 1200 }),
+    makeSegment({ id: "prep", type: "idle", title: "準備階段", planStart: "09:20", untilTime: "10:00", music: "idle", showTopics: true,
       hostScript: "選手查資料，評審練習講評、選出主持人。" }),
     ...buildSession("am"),
-    seg({ id: "lunch", type: "lunch", title: "午餐", planStart: "12:00", durationSec: 3600, music: "lunch" }),
+    makeSegment({ id: "lunch", type: "lunch", title: "午餐", planStart: "12:00", durationSec: 3600, music: "lunch" }),
     ...buildSession("pm"),
-    seg({ id: "waiting", type: "idle", title: "頒獎典禮即將開始", untilTime: "15:05", music: "idle", waitingRoom: true,
+    makeSegment({ id: "waiting", type: "idle", title: "頒獎典禮即將開始", untilTime: "15:05", music: "idle", waitingRoom: true,
       hostScript: "待機畫面：倒數到頒獎典禮開始。" }),
-    seg({ id: "ceremony", type: "ceremony", title: "頒獎典禮", planStart: "15:05", durationSec: 1500 }),
+    makeSegment({ id: "ceremony", type: "ceremony", title: "頒獎典禮", planStart: "15:05", durationSec: 1500 }),
   ];
 }
 
@@ -150,4 +150,21 @@ export function planTimes(segments) {
     cursor = end;
     return { start, end };
   });
+}
+
+// 段落類型的中文名稱（主控台、後台、投影畫面共用）
+export const TYPE_LABEL = {
+  idle: "待機", host: "主持人", speech: "發言", cross: "質詢", break: "休息＋評分",
+  comments: "觀眾留言", coin: "猜硬幣", commentary: "評審講評", lunch: "午餐", ceremony: "頒獎典禮",
+};
+
+// 音樂：key → 說明（檔案放在 audio/{key}.mp3）
+export const MUSIC = {
+  idle: "待機（循環）", intro: "選手介紹（播一次）", break: "休息（循環）", lunch: "午餐（循環）",
+};
+export const LOOP_MUSIC = ["idle", "break", "lunch"];
+
+// 把 Firestore 讀回來的流程補齊欄位（舊資料少了某個欄位也不會出錯）
+export function normalizeRundown(segments) {
+  return (Array.isArray(segments) ? segments : []).map((x) => makeSegment(x));
 }

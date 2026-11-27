@@ -7,7 +7,11 @@ import {
   CATEGORIES, categoryLabel,
 } from "./common.js";
 import { SCHOOL_DOMAIN, OWNER_ADMINS } from "./firebase-config.js";
-import { TOPIC_OPTIONS, TEAM_IDS } from "./defaults.js";
+import {
+  TOPIC_OPTIONS, TEAM_IDS, SESSIONS, SIDE_LABEL, TYPE_LABEL, MUSIC,
+  buildDefaultRundown, makeSegment, planTimes, fmtMinutes, toMinutes,
+} from "./defaults.js";
+import { watchRundown } from "./live.js";
 
 const gate = document.getElementById("gate");
 const area = document.getElementById("admin-area");
@@ -43,6 +47,11 @@ startPage({
       started = true;
       watchRoster();
       watchSettings((s) => { settings = s; fillSettingsOnce(); });
+      watchRundown((r, exists) => {
+        rundownExists = exists;
+        document.getElementById("rundown-source").textContent = exists ? "目前使用：已儲存的流程" : "目前使用：預設流程（還沒儲存過）";
+        if (!rundownDirty) { editing = r.map((x) => ({ ...x })); renderRundown(); }
+      });
     }
   },
 });
@@ -272,6 +281,11 @@ async function saveRoster() {
       }));
     });
     removed.forEach((r) => ops.push((b) => b.delete(doc(db, COL.roster, r.email))));
+    // 四組的組員名字（只存名字、不存 email），投影畫面介紹選手時用；任何人都能讀
+    for (const t of TEAM_IDS) {
+      const members = list.filter((p) => p.category === t).map((p) => p.name || p.email.split("@")[0]);
+      ops.push((b) => b.set(doc(db, COL.teams, t), { members, membersUpdatedAt: serverTimestamp() }, { merge: true }));
+    }
     for (let i = 0; i < ops.length; i += 400) {
       const batch = writeBatch(db);
       ops.slice(i, i + 400).forEach((op) => op(batch));
@@ -340,4 +354,133 @@ document.getElementById("load-current-btn").addEventListener("click", () => {
     .map((p) => `${categoryLabel(p.category)}\t${p.name || ""}\t${p.email}`)
     .join("\n");
   toast("已把目前名單填回輸入框，可以修改後再預覽儲存", "ok");
+});
+
+// ============================================================
+// 當天流程編輯
+// ============================================================
+let editing = [];
+let rundownDirty = false;
+let rundownExists = false;
+const editorBox = document.getElementById("rundown-editor");
+
+function markDirty() {
+  rundownDirty = true;
+  document.getElementById("rundown-dirty").textContent = "⚠️ 有修改還沒儲存";
+}
+
+function segTags(s) {
+  const tags = [];
+  if (s.session) tags.push(`<span class="badge">${SESSIONS[s.session].label}</span>`);
+  if (s.round) tags.push(`<span class="badge">第 ${s.round} 輪</span>`);
+  tags.push(`<span class="badge badge-orange">${esc(TYPE_LABEL[s.type] || s.type)}</span>`);
+  if (s.side) tags.push(`<span class="badge badge-${s.side}">${SIDE_LABEL[s.side]}</span>`);
+  if (s.openVote) tags.push(`<span class="badge badge-yellow">開放第 ${s.openVote.round} 輪評分</span>`);
+  if (s.showSlides) tags.push(`<span class="badge badge-gray">顯示${SIDE_LABEL[s.showSlides]}簡報</span>`);
+  return tags.join(" ");
+}
+
+function renderRundown() {
+  const times = planTimes(editing);
+  const musicOptions = (v) => `<option value="">（不播）</option>`
+    + Object.entries(MUSIC).map(([k, label]) => `<option value="${k}" ${v === k ? "selected" : ""}>${esc(label)}</option>`).join("");
+  editorBox.innerHTML = `<ol class="rd-list">${editing.map((s, i) => `
+    <li class="rd-item" data-i="${i}">
+      <div class="rd-head">
+        <span class="rd-time">${fmtMinutes(times[i].start)}</span>
+        <span class="rd-tags">${segTags(s)}</span>
+        <span class="spacer"></span>
+        <button class="btn btn-small" data-move="-1" type="button" ${i === 0 ? "disabled" : ""} title="上移">↑</button>
+        <button class="btn btn-small" data-move="1" type="button" ${i === editing.length - 1 ? "disabled" : ""} title="下移">↓</button>
+        <button class="btn btn-small" data-dup type="button">複製</button>
+        <button class="btn btn-small btn-danger" data-del type="button">刪除</button>
+      </div>
+      <div class="rd-fields">
+        <label class="rd-title">標題<input type="text" data-f="title" value="${esc(s.title)}" maxlength="40"></label>
+        <label>時長（分）<input type="number" data-f="durationMin" min="0" step="0.5" value="${s.durationSec / 60}"></label>
+        <label>倒數到<input type="text" data-f="untilTime" value="${esc(s.untilTime || "")}" placeholder="例 10:00"></label>
+        <label>預定開始<input type="text" data-f="planStart" value="${esc(s.planStart || "")}" placeholder="（自動）"></label>
+        <label>音樂<select data-f="music">${musicOptions(s.music)}</select></label>
+        <label class="rd-script">主持人提示<input type="text" data-f="hostScript" value="${esc(s.hostScript || "")}" maxlength="200"></label>
+      </div>
+    </li>`).join("")}</ol>`;
+}
+
+editorBox.addEventListener("input", (e) => {
+  const f = e.target.dataset.f;
+  const li = e.target.closest("[data-i]");
+  if (!f || !li) return;
+  const s = editing[Number(li.dataset.i)];
+  const v = e.target.value;
+  if (f === "durationMin") s.durationSec = Math.max(0, Math.round(Number(v) * 60) || 0);
+  else if (f === "untilTime" || f === "planStart") s[f] = v.trim() || null;
+  else if (f === "music") s.music = v || null;
+  else s[f] = v;
+  markDirty();
+  // 時間欄位改了，左邊的預定時間要跟著更新（不重畫整個表，免得打字中斷）
+  if (["durationMin", "untilTime", "planStart"].includes(f)) {
+    const times = planTimes(editing);
+    editorBox.querySelectorAll(".rd-time").forEach((el, i) => { el.textContent = fmtMinutes(times[i].start); });
+  }
+});
+editorBox.addEventListener("change", (e) => {
+  if (e.target.dataset.f === "music") markDirty();
+});
+
+editorBox.addEventListener("click", async (e) => {
+  const li = e.target.closest("[data-i]");
+  if (!li) return;
+  const i = Number(li.dataset.i);
+  const mv = e.target.closest("[data-move]")?.dataset.move;
+  if (mv) {
+    const j = i + Number(mv);
+    [editing[i], editing[j]] = [editing[j], editing[i]];
+    markDirty();
+    renderRundown();
+  }
+  if (e.target.closest("[data-dup]")) {
+    const copy = makeSegment({ ...editing[i], id: `${editing[i].id}-copy${Date.now().toString(36).slice(-4)}`, title: `${editing[i].title}（複製）` });
+    editing.splice(i + 1, 0, copy);
+    markDirty();
+    renderRundown();
+  }
+  if (e.target.closest("[data-del]")) {
+    const ok = await confirmDialog({ title: "刪除這一段？", body: `<p>「${esc(editing[i].title)}」（還沒按「儲存流程」前不會生效）</p>`, okText: "刪除", danger: true });
+    if (!ok) return;
+    editing.splice(i, 1);
+    markDirty();
+    renderRundown();
+  }
+});
+
+document.getElementById("reset-rundown").addEventListener("click", async () => {
+  const ok = await confirmDialog({
+    title: "還原成預設流程？",
+    body: "<p>表格會換回老師 Excel 的預設流程（還沒按「儲存流程」前不會生效）。</p>",
+    okText: "還原",
+  });
+  if (!ok) return;
+  editing = buildDefaultRundown();
+  markDirty();
+  renderRundown();
+});
+
+document.getElementById("save-rundown").addEventListener("click", async () => {
+  for (const s of editing) {
+    if (!s.title.trim()) return toast("有段落的標題是空白的", "error");
+    for (const f of ["untilTime", "planStart"]) {
+      if (s[f] && toMinutes(s[f]) == null) return toast(`「${s.title}」的時間格式要像 10:00`, "error", 5000);
+    }
+  }
+  try {
+    await setDoc(doc(db, COL.config, "rundown"), {
+      segments: editing.map((s) => ({ ...s, title: s.title.trim() })),
+      updatedAt: serverTimestamp(),
+    });
+    rundownDirty = false;
+    document.getElementById("rundown-dirty").textContent = "";
+    toast("流程已儲存", "ok");
+  } catch (e) {
+    toast(`儲存失敗：${e.message}`, "error", 6000);
+  }
 });

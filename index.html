@@ -20,6 +20,11 @@
       <h1 id="hero-title">FA26<br><span class="hl">辯論比賽</span></h1>
     </section>
 
+    <section class="section hidden" id="now-section">
+      <h2 class="section-title">目前進度</h2>
+      <div class="card now-mini" id="now-mini"></div>
+    </section>
+
     <section class="section">
       <h2 class="section-title">我的身分</h2>
       <div class="card" id="me-card"><p class="muted">載入中…</p></div>
@@ -40,14 +45,15 @@
     import {
       startPage, login, esc, watchSettings, teamName, sessionRole, PAGES, pageReady,
     } from "./js/common.js";
-    import { buildDefaultRundown, SESSIONS } from "./js/defaults.js";
+    import { SESSIONS } from "./js/defaults.js";
     import { renderSchedule, indexByClock } from "./js/schedule.js";
+    import { mountLiveBar } from "./js/livebar.js";
     import { EVENT_DATE } from "./js/firebase-config.js";
 
     let settings = null;
     let profile = null;
-    // 第 2 階段起改讀 Firestore 的流程與即時狀態；現在先用預設流程
-    const rundown = buildDefaultRundown();
+    let rundown = [];   // 依擲硬幣結果排好的流程
+    let liveIndex = -1; // 主控台目前在第幾段（-1 ＝ 還沒開始）
 
     function renderTopics() {
       if (!settings) return;
@@ -64,9 +70,22 @@
     }
 
     function renderScheduleBox() {
-      if (!settings) return;
-      document.getElementById("schedule").innerHTML =
-        renderSchedule(rundown, settings, indexByClock(rundown, EVENT_DATE));
+      if (!settings || !rundown.length) return;
+      const now = liveIndex >= 0 ? liveIndex : indexByClock(rundown, EVENT_DATE);
+      document.getElementById("schedule").innerHTML = renderSchedule(rundown, settings, now);
+    }
+
+    // 目前進度小卡：現在這段、下一段
+    function renderNowMini() {
+      const sec = document.getElementById("now-section");
+      const seg = rundown[liveIndex];
+      sec.classList.toggle("hidden", !seg);
+      if (!seg) return;
+      const next = rundown[liveIndex + 1];
+      document.getElementById("now-mini").innerHTML = `
+        ${seg.session ? `<span class="tag">${esc(SESSIONS[seg.session].label)}${seg.round ? `・第 ${seg.round} 輪` : ""}</span>` : ""}
+        <h3 style="margin:8px 0 4px;font-size:24px">${esc(seg.title)}</h3>
+        <p class="muted" style="margin:0">下一項：${next ? esc(next.title) : "（最後一段）"}</p>`;
     }
     setInterval(renderScheduleBox, 60 * 1000);
 
@@ -115,6 +134,14 @@
       renderMe();
     });
     startPage({ active: "home", onProfile(p) { profile = p; renderMe(); } });
+    mountLiveBar({
+      onChange(state, list, i) {
+        rundown = list;
+        liveIndex = i;
+        renderNowMini();
+        renderScheduleBox();
+      },
+    });
   </script>
 </body>
 </html>
