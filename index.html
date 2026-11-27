@@ -15,7 +15,7 @@
   <main class="container">
     <section class="hero">
       <div class="row">
-        <span class="tag">DEBATE DAY・2026.12.04</span>
+        <span class="tag">DEBATE DAY 2026.12.04</span>
       </div>
       <h1 id="hero-title">FA26<br><span class="hl">辯論比賽</span></h1>
     </section>
@@ -83,7 +83,7 @@
       if (!seg) return;
       const next = rundown[liveIndex + 1];
       document.getElementById("now-mini").innerHTML = `
-        ${seg.session ? `<span class="tag">${esc(SESSIONS[seg.session].label)}${seg.round ? `・第 ${seg.round} 輪` : ""}</span>` : ""}
+        ${seg.session ? `<span class="tag tag-zh">${esc(SESSIONS[seg.session].label)}${seg.round ? `・第 ${seg.round} 輪` : ""}</span>` : ""}
         <h3 style="margin:8px 0 4px;font-size:24px">${esc(seg.title)}</h3>
         <p class="muted" style="margin:0">下一項：${next ? esc(next.title) : "（最後一段）"}</p>`;
     }

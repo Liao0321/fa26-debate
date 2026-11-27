@@ -116,18 +116,13 @@ const timerHtml = (cls = "") => `<div class="d-timer ${cls}" data-timer></div>`;
 const statusHtml = () => `<div class="d-status" data-status></div>`;
 const nextHtml = (next) => next ? `<div class="d-next"><b>下一項：</b>${withSpeaker(next)}</div>` : "";
 
-function pillText(seg) {
-  const parts = [];
-  if (seg.round) parts.push(`ROUND ${seg.round}`);
-  parts.push(TYPE_LABEL[seg.type] || "");
-  return parts.join("・");
-}
+// 段落上方的小標籤只放「ROUND n」：像素字型只適合英文數字，中英混排上下會對不齊
 
 // ---------- 一般段落 ----------
 function renderSegment(seg, next) {
   const side = seg.side || "";
   let center = `
-    <span class="d-pill ${side}">${esc(pillText(seg))}</span>
+    ${seg.round ? `<span class="d-pill ${side}">ROUND ${seg.round}</span>` : ""}
     <h1 class="d-title ${side}">${esc(seg.title)}</h1>
     ${speakerName(seg) ? `<div class="d-speaker">🎤 ${esc(speakerName(seg))}</div>` : ""}`;
   if (seg.showSlides) center += `<div class="d-muted small">本組未提供簡報</div>`;
@@ -339,7 +334,7 @@ function renderCoin(seg, next) {
   stage.innerHTML = `
     <div class="d-band"></div>
     <div class="d-main"><div class="d-col">
-      <span class="d-pill">${esc(pillText(seg))}</span>
+      ${seg.round ? `<span class="d-pill">ROUND ${seg.round}</span>` : ""}
       <h1 class="d-title">${esc(seg.title)}</h1>
       <div class="coin-wrap"><div class="coin3d ${coinCls}">
         <div class="coin-face front">正</div><div class="coin-face back">反</div>

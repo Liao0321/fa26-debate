@@ -605,7 +605,9 @@ details.card summary { cursor: pointer; }
 .live-bar-inner { display: flex; align-items: center; gap: 8px; min-height: 38px; }
 .live-bar .lb-label { color: var(--orange); font-weight: 800; white-space: nowrap; }
 .live-bar .lb-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-bar .lb-time { font-family: var(--pixel); font-size: 12px; white-space: nowrap; }
+.live-bar .lb-time { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 有中文的小標籤不用像素字型（中英混排上下對不齊） */
+.tag.tag-zh { font-family: inherit; font-weight: 800; font-size: 13px; }
 .live-bar .lb-time.is-over { color: #ff8c8f; }
 
 /* ---------- 後台：流程編輯 ---------- */
