@@ -104,7 +104,6 @@
   font-size: min(22vh, 15vw);
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0.06em 0.06em 0 rgba(20, 20, 20, 0.12);
 }
 .d-timer.is-warn { color: var(--orange-deep); }
 .d-timer.is-over { color: var(--red); animation: blink 1s steps(1) infinite; }
@@ -220,7 +219,7 @@
 }
 .w-soon { font-family: var(--pixel); color: var(--orange); font-size: clamp(16px, 2vw, 40px); animation: blink 1.2s steps(1) infinite; }
 .w-title { margin: 0; font-size: clamp(40px, 6vw, 120px); font-weight: 900; line-height: 1.15; }
-.w-timer { font-family: var(--pixel); font-size: min(20vh, 14vw); line-height: 1.1; color: #fff; text-shadow: 0.06em 0.06em 0 var(--orange-deep); }
+.w-timer { font-family: var(--pixel); font-size: min(20vh, 14vw); line-height: 1.1; color: #fff; }
 .w-progress { width: 50vw; height: 2.2vh; border: 0.4vh solid #fff; padding: 0.4vh; }
 .w-progress div { height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--orange) 0 1.6vh, var(--orange-deep) 1.6vh 2vh); transition: width 1s linear; }
 .w-ticker { min-height: 1.6em; font-size: 1.3em; font-weight: 700; color: #ffd8b0; }
