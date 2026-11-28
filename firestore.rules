@@ -278,6 +278,44 @@ service cloud.firestore {
       allow delete: if dIsAdmin();
     }
 
+    // debate_comments/{id}：觀眾留言牆
+    //   不存 email：作者用 uid 記錄，名稱由留言的人自己輸入（可以匿名）；按讚也只記 uid
+    //   讀：登入的學校帳號；被隱藏的留言只有作者本人和控制者看得到（查詢要加 hidden == false）
+    //   新增：100 字以內、名稱 20 字以內，讚數從 0 開始
+    //   按讚／收回讚：只能加上或拿掉自己的 uid，讚數同時 +1／−1
+    //   隱藏：控制者；刪除：作者本人或控制者
+    match /debate_comments/{id} {
+      allow read: if isSchool()
+        && (resource == null || resource.data.hidden == false
+            || resource.data.authorUid == request.auth.uid || dCanControl());
+      allow create: if isSchool()
+        && request.resource.data.keys().hasOnly(['session', 'text', 'authorUid', 'authorName', 'likedBy', 'likeCount', 'hidden', 'createdAt'])
+        && request.resource.data.session in ['am', 'pm']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 100
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() >= 1 && request.resource.data.authorName.size() <= 20
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.likedBy == []
+        && request.resource.data.likeCount == 0
+        && request.resource.data.hidden == false
+        && request.resource.data.createdAt == request.time;
+      allow update: if isSchool() && resource.data.hidden == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likeCount'])
+        && (
+          (!(request.auth.uid in resource.data.likedBy)
+            && request.resource.data.likedBy == resource.data.likedBy.concat([request.auth.uid])
+            && request.resource.data.likeCount == resource.data.likeCount + 1)
+          || ((request.auth.uid in resource.data.likedBy)
+            && request.resource.data.likedBy == resource.data.likedBy.removeAll([request.auth.uid])
+            && request.resource.data.likeCount == resource.data.likeCount - 1)
+        );
+      allow update: if dCanControl()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden'])
+        && request.resource.data.hidden is bool;
+      allow delete: if (isSchool() && resource.data.authorUid == request.auth.uid) || dCanControl();
+    }
+
     // debate_clock/{uid}：校時用。每人只能寫自己的，而且只能寫「伺服器現在的時間」
     match /debate_clock/{uid} {
       allow read: if isSchool() && request.auth.uid == uid;

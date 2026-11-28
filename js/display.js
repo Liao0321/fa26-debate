@@ -1,7 +1,7 @@
 // 投影畫面：依照主控台的即時狀態自動切換，不需要操作
 // 投影電腦請用管理員（或控制老師）帳號開這頁，然後按「全螢幕」
 import { setPixelText } from "./pixelnum.js";
-import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { startPage, login, db, COL, esc, watchSettings, teamName } from "./common.js";
 import {
   startClockSync, watchRundown, watchLive, voteCounter, orderedRundown, currentIndex, timing, fmtClock, endTimeText, serverNow,
@@ -56,7 +56,7 @@ function subscribe() {
   const ready = () => { if (++got >= 3) data.ready = true; render(); };
   watchSettings((s) => { data.settings = s; document.getElementById("tb-name").textContent = s.eventName; ready(); });
   watchRundown((r) => { data.rundown = r; ready(); });
-  watchLive((s, meta) => { data.state = s; data.online = meta.online; followVotes(s?.voteOpen); ready(); });
+  watchLive((s, meta) => { data.state = s; data.online = meta.online; followVotes(s?.voteOpen); followFeatured(s?.featuredCommentIds); ready(); });
   onSnapshot(collection(db, COL.teams), (snap) => {
     data.teams = {};
     snap.forEach((d) => { data.teams[d.id] = d.data(); });
@@ -86,7 +86,7 @@ function render() {
   const viewKey = JSON.stringify([
     seg?.id, seg?.title, next?.title, data.state?.coinFirst, data.state?.coinAt, data.state?.voteOpen,
     data.settings.topics, data.settings.teamNames, data.settings.eventName,
-    data.teams,
+    data.teams, showCommentsHere(seg) ? featuredList() : null,
   ]);
   // 簡報：先把「這一場」（或下一段所屬那一場）的兩份簡報載好
   ensureSlides(seg?.session || next?.session || null);
@@ -141,11 +141,10 @@ function renderSegment(seg, next) {
     center += timerHtml("small") + statusHtml() + playersHtml(seg.session);
   } else if (seg.showTopics) {
     center += timerHtml("small") + statusHtml() + `<div class="d-info" data-endinfo></div>` + topicsHtml();
+  } else if (showCommentsHere(seg)) {
+    center += featuredHtml();
   } else {
     center += timerHtml() + statusHtml();
-    if (seg.type === "comments") {
-      center += `<div class="d-placeholder">觀眾留言會顯示在這裡（第 5 階段完成後）</div>`;
-    }
     if (seg.type === "lunch") center += `<div class="d-info" data-endinfo></div>`;
   }
   center += nextHtml(next);
@@ -192,6 +191,39 @@ function votePanelHtml(seg) {
       <div class="d-vote-count" data-votecount></div>
     </div>
     ${seg.type === "break" ? `<div class="d-info" data-endinfo></div>` : ""}`;
+}
+
+// ---------- 老師挑的觀眾留言（live/state.featuredCommentIds） ----------
+// 「宣讀高人氣觀眾留言」和第三輪主持人開場（回顧前兩輪＋觀眾留言）時顯示
+const showCommentsHere = (seg) => !!seg && (seg.type === "comments" || /-r3-recap$/.test(seg.id || ""));
+const featuredDocs = {};   // id → 留言資料（null＝讀取中或已刪除）
+const featuredStops = {};
+let featuredIds = [];
+function followFeatured(ids) {
+  featuredIds = Array.isArray(ids) ? ids.slice(0, 5) : [];
+  for (const id of Object.keys(featuredStops)) {
+    if (!featuredIds.includes(id)) { featuredStops[id](); delete featuredStops[id]; delete featuredDocs[id]; }
+  }
+  for (const id of featuredIds) {
+    if (featuredStops[id]) continue;
+    featuredDocs[id] = null;
+    featuredStops[id] = onSnapshot(doc(db, COL.comments, id), (snap) => {
+      featuredDocs[id] = snap.exists() ? snap.data() : null;
+      render();
+    }, (e) => console.warn(e));
+  }
+}
+const featuredList = () => featuredIds.map((id) => featuredDocs[id]).filter((c) => c && !c.hidden)
+  .map((c) => ({ text: c.text, name: c.authorName || "匿名", likes: c.likeCount || 0 }));
+function featuredHtml() {
+  const L = featuredList();
+  if (!L.length) return `<div class="d-placeholder">老師還沒有挑選留言</div>`;
+  return `<div class="d-comments n${L.length}">${L.map((c, i) => `
+    <div class="d-comment">
+      <span class="d-comment-no">${i + 1}</span>
+      <p>${esc(c.text)}</p>
+      <div class="d-comment-meta">— ${esc(c.name)}<span>♥ ${c.likes}</span></div>
+    </div>`).join("")}</div>`;
 }
 
 // 已投票人數：只顯示人數，不顯示分數
