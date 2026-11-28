@@ -711,3 +711,42 @@ details.card summary { cursor: pointer; }
 /* 主控台：等待「開始計時」時，按鈕閃一下提醒 */
 .ctl-btn.is-pulse { animation: ctl-pulse 1.2s steps(2) infinite; }
 @keyframes ctl-pulse { 50% { background: var(--yellow); } }
+
+/* ============================================================
+   評分頁 vote.html
+   ============================================================ */
+.vote-page .card + .card { margin-top: 14px; }
+.vote-round { font-size: 18px; }
+.vote-msg { text-align: center; padding: 28px 18px; }
+.vote-big { margin: 0 0 8px; font-size: 22px; font-weight: 900; }
+.vote-side { border-left-width: 12px; }
+.vote-side.pro { border-left-color: var(--pro); background: linear-gradient(90deg, var(--pro-soft), var(--paper) 60%); }
+.vote-side.con { border-left-color: var(--con); background: linear-gradient(90deg, var(--con-soft), var(--paper) 60%); }
+.vote-team { font-size: 20px; }
+.score-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.score-btn {
+  min-height: 56px;
+  border: var(--line);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--pixel);
+  font-size: 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.score-btn.lit { background: var(--orange-soft); }
+.score-btn.on { background: var(--orange); transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.vote-side.pro .score-btn.lit { background: var(--pro-light); }
+.vote-side.pro .score-btn.on { background: var(--pro); }
+.vote-side.con .score-btn.lit { background: var(--con-light); }
+.vote-side.con .score-btn.on { background: var(--con); color: var(--con-on); }
+.score-hint { display: flex; justify-content: space-between; margin-top: 6px; }
+.vote-submit { text-align: center; }
+.vote-send { width: 100%; min-height: 60px; font-size: 20px; }
+.vote-status { margin-top: 10px; font-weight: 700; }
+.vote-ok { color: var(--con-deep); }
+.vote-table th .muted { color: #cfc8bd; }
+.vote-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.vote-table tfoot th, .vote-table tfoot td { border-top: 3px solid var(--ink); }
+details.card summary { cursor: pointer; }
+details.card[open] summary { margin-bottom: 10px; }

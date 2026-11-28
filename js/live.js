@@ -6,7 +6,7 @@
 // 每台裝置自己算：剩餘 = remainingAtStart − (伺服器現在時間 − startedAt)
 // ============================================================
 import {
-  doc, onSnapshot, setDoc, updateDoc, getDocFromServer, serverTimestamp,
+  doc, onSnapshot, setDoc, updateDoc, getDocFromServer, serverTimestamp, collection, query, where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth, COL, configReady, isSchoolEmail } from "./common.js";
@@ -252,4 +252,23 @@ export function setSpeakerDone(state, done) {
 // 發言人本人在選手頁按「我說完了」（安全規則只允許改這兩個欄位）
 export function speakerPressDone() {
   return updateDoc(stateRef(), { speakerDone: true, speakerDoneAt: serverTimestamp() });
+}
+
+// ---------- 已投票人數（主控台、投影畫面用；只算人數，不看分數） ----------
+// const follow = voteCounter((n) => …)；每次狀態更新時呼叫 follow(state.voteOpen)
+// n：這一輪已經投票的人數；null＝沒有開放或讀不到
+export function voteCounter(onCount) {
+  let key = "";
+  let stop = null;
+  return (v) => {
+    const k = v && v.session && v.round ? `${v.session}_${v.round}` : "";
+    if (k === key) return;
+    key = k;
+    stop?.();
+    stop = null;
+    onCount(null);
+    if (!k) return;
+    const q = query(collection(db, COL.votes), where("session", "==", v.session), where("round", "==", v.round));
+    stop = onSnapshot(q, (snap) => { if (key === k) onCount(snap.size); }, (e) => { console.warn("讀不到投票人數", e); onCount(null); });
+  };
 }

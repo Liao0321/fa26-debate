@@ -13,6 +13,7 @@ import {
 } from "./defaults.js";
 import { watchRundown, segHasTimer } from "./live.js";
 import { isSlidesUrl, slidesEditUrl } from "./slides.js";
+import { tallySession, ROUNDS } from "./votes.js";
 
 const gate = document.getElementById("gate");
 const area = document.getElementById("admin-area");
@@ -47,6 +48,7 @@ startPage({
     if (!started) {
       started = true;
       watchRoster();
+      watchVotes();
       watchSettings((s) => { settings = s; fillSettingsOnce(); });
       watchRundown((r, exists) => {
         rundownExists = exists;
@@ -347,6 +349,7 @@ async function saveRoster() {
 function watchRoster() {
   onSnapshot(collection(db, COL.roster), (snap) => {
     currentRoster = snap.docs.map((d) => ({ email: d.id, ...d.data() }));
+    renderVoteStats();
     renderCurrent();
   }, (e) => {
     currentBox.innerHTML = `<p class="badge badge-red">讀取名單失敗：${esc(e.message)}</p>`;
@@ -527,3 +530,62 @@ document.getElementById("save-rundown").addEventListener("click", async () => {
     toast(`儲存失敗：${e.message}`, "error", 6000);
   }
 });
+
+// ============================================================
+// 評分統計（只有管理員看得到）
+// ============================================================
+let allVotes = [];
+let voteTab = "am";
+const ROLE_LABEL = { judge: "評審", host: "主持", audience: "觀眾" };
+
+function watchVotes() {
+  onSnapshot(collection(db, COL.votes), (snap) => {
+    allVotes = snap.docs.map((d) => d.data());
+    renderVoteStats();
+  }, (e) => {
+    document.getElementById("vote-stats").innerHTML = `<p class="muted">讀不到評分資料：${esc(e.message)}（安全規則可能還沒更新）</p>`;
+  });
+}
+
+document.getElementById("vote-tabs").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-vtab]")?.dataset.vtab;
+  if (t) { voteTab = t; renderVoteStats(); }
+});
+
+function renderVoteStats() {
+  const box = document.getElementById("vote-stats");
+  if (!box) return;
+  document.getElementById("vote-tabs").innerHTML = Object.entries(SESSIONS).map(([k, v]) =>
+    `<button class="btn btn-small ${voteTab === k ? "btn-primary" : ""}" data-vtab="${k}" type="button">${esc(v.label)}</button>`).join("");
+  const roster = Object.fromEntries(currentRoster.map((r) => [r.email, r]));
+  const jw = settings?.judgeWeight ?? 3;
+  const t = tallySession(allVotes, roster, voteTab, { judgeWeight: jw });
+  const name = (side) => esc(settings?.teamNames?.[`${voteTab}_${side}`] || categoryLabel(`${voteTab}_${side}`));
+  const cell = (x) => `<td class="num"><b>${x.total}</b><div class="small muted">評審 ${x.judge}・觀眾 ${x.audience}</div></td>`;
+  const rows = ROUNDS.map((r) => {
+    const R = t.rounds[r];
+    return `<tr><th>第 ${r} 輪</th>${cell(R.pro)}${cell(R.con)}<td class="num">${R.voters} 人<div class="small muted">評審／主持 ${R.judges}</div></td></tr>`;
+  }).join("");
+  const win = t.winner
+    ? `<span class="badge badge-${t.winner}">目前領先：${name(t.winner)}</span>
+       <span class="small muted">${t.decidedBy === "total" ? "依加權總分" : t.decidedBy === "judge" ? "總分平手，依評審與主持人的加權分數" : "老師指定"}</span>`
+    : `<span class="badge badge-gray">${t.voters.length ? "平手（總分和評審分都一樣，頒獎前由老師決定）" : "還沒有人評分"}</span>`;
+  box.innerHTML = `
+    <div class="card">
+      <div class="row" style="margin-bottom:10px">${win}</div>
+      <div class="table-wrap"><table class="vote-table">
+        <thead><tr><th></th><th>${name("pro")}<div class="small muted">正方</div></th><th>${name("con")}<div class="small muted">反方</div></th><th>投票人數</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><th>三輪合計</th>${cell(t.total.pro)}${cell(t.total.con)}<td></td></tr></tfoot>
+      </table></div>
+      <p class="small muted" style="margin-bottom:0">數字是加權後的分數（評審、主持人 ×${esc(jw)}）。${t.ignored ? `有 ${t.ignored} 張票不算（本場選手或格式不對）。` : ""}</p>
+    </div>
+    <details class="card">
+      <summary><b>每個人投了什麼（${t.voters.length} 張票）</b></summary>
+      ${t.voters.length ? `<div class="table-wrap"><table class="vote-table">
+        <thead><tr><th>輪</th><th>姓名</th><th>身分</th><th>正方</th><th>反方</th></tr></thead>
+        <tbody>${t.voters.map((v) => `<tr><td>${v.round}</td><td>${esc(v.name)}<div class="small muted">${esc(v.email)}</div></td>
+          <td>${ROLE_LABEL[v.role] || v.role}${v.weight > 1 ? ` ×${v.weight}` : ""}</td><td class="num">${v.pro}</td><td class="num">${v.con}</td></tr>`).join("")}</tbody>
+      </table></div>` : `<p class="muted">還沒有人評分。</p>`}
+    </details>`;
+}
