@@ -293,3 +293,36 @@
 /* 像素數字（SVG）：高度 0.8em、邊緣不反鋸齒 */
 .pixel-num { display: inline-block; height: 0.8em; vertical-align: middle; overflow: visible; }
 .d-timer, .w-timer { -webkit-font-smoothing: antialiased; }
+
+/* ---------- 工具列的小播放器＋選音樂面板 ---------- */
+.mini-player { display: flex; align-items: center; gap: 6px; max-width: 260px; padding: 2px 8px 2px 2px; border: 2px solid var(--ink); background: var(--paper); }
+.mp-btn { width: 28px; height: 26px; border: 0; background: var(--orange); font-size: 13px; cursor: pointer; }
+.mp-btn:disabled { background: #ddd; cursor: default; }
+.mp-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }
+
+.music-panel {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  z-index: 70;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 72px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: var(--line);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  cursor: auto;
+}
+.mp-head, .mp-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mp-head b { font-size: 16px; }
+.mp-note { margin: 6px 0 10px; color: var(--muted); font-size: 13px; }
+.mp-actions { margin-bottom: 10px; }
+.mp-table { width: 100%; border-collapse: collapse; }
+.mp-table td { padding: 4px 6px; border-top: 1px solid #e6e0d6; vertical-align: middle; }
+.mp-table select { width: 100%; padding: 4px 6px; border-width: 2px; font-size: 13px; }
+.mp-seg { width: 42%; }
+.mp-loop { display: flex; align-items: center; gap: 3px; white-space: nowrap; font-size: 12px; color: var(--muted); }
+.mp-sub { margin: 14px 0 4px; font-size: 14px; }
+.mp-ses { display: inline-block; margin-right: 4px; padding: 0 4px; background: var(--orange-soft); color: var(--orange-ink); font-size: 11px; font-weight: 700; }
