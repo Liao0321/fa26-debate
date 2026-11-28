@@ -47,6 +47,21 @@ function rowKind(r, segments) {
 
 const ROUND_NUM = { 1: "1", 2: "2", 3: "3" };
 
+// 這一輪選手可以說話多久：照流程裡的實際設定，例如「每一方發言 5 分鐘」「提問 2 分鐘」
+const TALK = [
+  { type: "speech", label: "發言" },
+  { type: "cross", label: "提問" },
+];
+const fmtMin = (sec) => String(Math.round((sec / 60) * 10) / 10);
+function talkLines(segs) {
+  return TALK.map(({ type, label }) => {
+    const durs = [...new Set(segs.filter((s) => s.type === type && s.durationSec > 0).map((s) => s.durationSec))].sort((a, b) => a - b);
+    if (!durs.length) return null;
+    const n = durs.length === 1 ? fmtMin(durs[0]) : `${fmtMin(durs[0])}～${fmtMin(durs[durs.length - 1])}`;
+    return { label, n };
+  }).filter(Boolean);
+}
+
 // nowIndex：目前進行到第幾段（-1 ＝ 還沒開始）
 export function renderSchedule(segments, settings, nowIndex = -1) {
   const rows = scheduleRows(segments);
@@ -75,16 +90,18 @@ export function renderSchedule(segments, settings, nowIndex = -1) {
     const isPast = nowIndex >= 0 && Math.max(...r.indexes) < nowIndex;
     const cls = `${isNow ? "is-now" : ""} ${isPast ? "is-past" : ""}`;
     const time = `${fmtMinutes(r.start)}${r.showEnd ? `–${fmtMinutes(r.end)}` : ""}`;
-    const mins = Math.round(r.end - r.start);
     const seg = segments[r.indexes[0]];
     if (r.type === "round") {
       const [, name = r.title] = r.title.split("：");
+      const talk = talkLines(r.indexes.map((i) => segments[i]));
       return `<li class="sc-round ${cls}">
         <div class="sc-round-num"><small>ROUND</small>${ROUND_NUM[seg.round] || ""}</div>
         <div class="sc-round-body">
           <b>${esc(name)}</b>
-          <span class="sc-round-time">${time}・${mins} 分鐘</span>
+          <span class="sc-round-time">${time}</span>
         </div>
+        ${talk.length ? `<div class="sc-round-talk">${talk.map((t) =>
+          `<span><em>每一方${t.label}</em><b>${t.n}</b> 分鐘</span>`).join("")}</div>` : ""}
         ${isNow ? nowBadge : ""}
       </li>`;
     }

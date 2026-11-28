@@ -675,6 +675,19 @@ details.card summary { cursor: pointer; }
 .sc-round-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sc-round-body b { font-size: 20px; }
 .sc-round-time { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 700; }
+/* 選手說話的時長：卡片右邊，安靜但清楚 */
+.sc-round-talk {
+  margin-left: auto; padding-left: 16px; border-left: 2px dashed #d8d0c4;
+  display: flex; flex-direction: column; gap: 4px; text-align: right; white-space: nowrap;
+}
+.sc-round-talk span { font-size: 15px; color: var(--muted); font-weight: 700; }
+.sc-round-talk em { font-style: normal; margin-right: 6px; }
+.sc-round-talk b { font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) {
+  .sc-round { flex-wrap: wrap; }
+  .sc-round-talk { flex-basis: 100%; margin: -4px 0 0 78px; padding-left: 0; border-left: 0; text-align: left; flex-direction: row; flex-wrap: wrap; gap: 2px 14px; }
+  .sc-round-talk b { font-size: 17px; }
+}
 .sc-round.is-now { background: var(--orange-soft); box-shadow: 5px 5px 0 var(--orange-deep); }
 .sc-round.is-now .sc-round-num { background: var(--orange); color: var(--ink); }
 /* 休息、開場前：細細一行，不搶戲 */
@@ -799,3 +812,4 @@ details.card[open] summary { margin-bottom: 10px; }
 .aw-mvp { display: flex; flex-direction: column; gap: 6px; }
 .ctl-list-more { margin: 4px 0; text-align: center; }
 .lb-rehearsal { background: var(--yellow); color: var(--ink); font-weight: 900; padding: 0 8px; margin-right: 6px; }
+.sc-round-talk + .sc-now { margin-left: 12px; }
