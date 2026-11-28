@@ -750,3 +750,34 @@ details.card summary { cursor: pointer; }
 .vote-table tfoot th, .vote-table tfoot td { border-top: 3px solid var(--ink); }
 details.card summary { cursor: pointer; }
 details.card[open] summary { margin-bottom: 10px; }
+
+/* ============================================================
+   留言牆 comments.html
+   ============================================================ */
+.cm-tabs { margin-bottom: 14px; }
+.cm-form textarea { width: 100%; resize: vertical; font-size: 16px; }
+.cm-label { display: block; font-weight: 800; margin-bottom: 8px; }
+.cm-form-row { margin-top: 10px; }
+.cm-name { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; }
+.cm-name input { width: 9em; padding: 6px 8px; font-size: 16px; }
+.cm-sort { margin: 22px 0 10px; }
+.cm-page .cm-item + .cm-item { margin-top: 12px; }
+.cm-item { padding: 14px 16px; }
+.cm-item.is-hidden { opacity: 0.6; border-style: dashed; }
+.cm-text { margin: 0 0 10px; font-size: 17px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.cm-meta { gap: 8px; }
+.cm-author { font-weight: 800; display: inline-flex; gap: 6px; align-items: center; }
+.cm-like { min-width: 64px; }
+.cm-like.on { background: var(--orange); }
+.cm-empty { text-align: center; }
+
+/* 主控台的留言管理 */
+.ctl-cm-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid #e6e0d6; }
+.ctl-cm-item:first-child { border-top: 0; }
+.ctl-cm-item.is-featured { background: var(--orange-soft); margin: 0 -12px; padding: 10px 12px; }
+.ctl-cm-item.is-hidden { opacity: 0.5; }
+.ctl-cm-body { flex: 1; min-width: 0; }
+.ctl-cm-body p { margin: 0 0 4px; word-break: break-word; }
+.ctl-cm-acts { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.ctl-cm-acts .btn { min-height: 40px; }
+.ctl-cm-num { flex: none; width: 1.6em; height: 1.6em; display: grid; place-items: center; background: var(--orange); border: 2px solid var(--ink); font-weight: 900; }

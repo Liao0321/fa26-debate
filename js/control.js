@@ -1,5 +1,7 @@
 // 主控台：控制流程、計時、投票開關、猜硬幣
-import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  collection, doc, query, where, onSnapshot, updateDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 // 建議用老師的手機或平板開（投影電腦只開 display.html，簡報筆才不會按到這一頁）
 import {
   startPage, login, db, COL, esc, toast, confirmDialog, watchSettings,
@@ -50,6 +52,7 @@ startPage({
         snap.forEach((d) => { teams[d.id] = d.data(); });
         renderAll();
       });
+      watchComments(cmSession);
       setInterval(tick, 250);
     }
   },
@@ -292,4 +295,106 @@ function renderAll() {
   renderButtons();
   renderExtra();
   renderList();
+  followCommentSession();
+  renderComments();
 }
+
+// ============================================================
+// 觀眾留言管理：挑 3～5 則投影、隱藏不適合的留言
+// live/state.featuredCommentIds：投影中的留言（照挑選的順序）
+// ============================================================
+const MAX_FEATURED = 5;
+let cmSession = "am";
+let cmPicked = false;   // 老師自己切換過場次，就不再跟著目前段落
+let cmAll = [];         // 這一場的所有留言（包含被隱藏的）
+let cmStop = null;
+const featured = () => (Array.isArray(state?.featuredCommentIds) ? state.featuredCommentIds : []);
+
+// 投影留言的按鈕不用 act()：老師常常連續點好幾則，不能被「防連按」擋掉
+function setFeatured(ids) {
+  liveUpdate({ featuredCommentIds: ids }).catch((e) => toast(`操作失敗：${e.message}`, "error"));
+}
+
+function watchComments(s) {
+  cmSession = s;
+  cmStop?.();
+  cmAll = [];
+  cmStop = onSnapshot(query(collection(db, COL.comments), where("session", "==", s)), (snap) => {
+    cmAll = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderComments();
+  }, (e) => {
+    document.getElementById("cm-ctl-list").innerHTML = `<p class="muted">讀不到留言：${esc(e.message)}（安全規則可能還沒更新）</p>`;
+  });
+}
+
+// 跟著目前段落的場次切換（午餐、待機這些段落就看前面最近的一場）
+function followCommentSession() {
+  if (cmPicked) return;
+  const L = list();
+  let s = null;
+  for (let i = idx(); i >= 0 && !s; i--) s = L[i]?.session || null;
+  if (s && s !== cmSession) watchComments(s);
+}
+
+function cmLine(c, { inFeatured = false, pos = 0 } = {}) {
+  const on = featured().includes(c.id);
+  const full = !on && featured().length >= MAX_FEATURED;
+  return `
+    <div class="ctl-cm-item ${on && !inFeatured ? "is-featured" : ""} ${c.hidden ? "is-hidden" : ""}">
+      ${inFeatured ? `<b class="ctl-cm-num">${pos}</b>` : ""}
+      <div class="ctl-cm-body">
+        <p>${esc(c.text)}</p>
+        <div class="small muted">${esc(c.authorName || "匿名")}・♥ ${c.likeCount || 0}${c.hidden ? "・<b>已隱藏</b>" : ""}</div>
+      </div>
+      <div class="ctl-cm-acts">
+        ${c.hidden ? "" : `<button class="btn btn-small ${on ? "" : "btn-primary"}" data-cm-feature="${c.id}" type="button" ${full ? "disabled" : ""}>${on ? "取消投影" : "投影"}</button>`}
+        ${inFeatured ? "" : `<button class="btn btn-small ${c.hidden ? "" : "btn-ghost"}" data-cm-hide="${c.id}" type="button">${c.hidden ? "取消隱藏" : "隱藏"}</button>`}
+      </div>
+    </div>`;
+}
+
+function renderComments() {
+  const tabs = document.getElementById("cm-ctl-tabs");
+  if (!tabs) return;
+  tabs.innerHTML = Object.entries(SESSIONS).map(([k, v]) =>
+    `<button class="btn btn-small ${k === cmSession ? "btn-primary" : ""}" data-cm-session="${k}" type="button">${esc(v.label)}</button>`).join("")
+    + `<span class="small muted">${cmAll.filter((c) => !c.hidden).length} 則留言</span>`;
+  const byId = Object.fromEntries(cmAll.map((c) => [c.id, c]));
+  const f = featured();
+  const fx = f.map((id, i) => byId[id] ? cmLine(byId[id], { inFeatured: true, pos: i + 1 }) : "").join("");
+  const other = f.length && !f.some((id) => byId[id]);
+  document.getElementById("cm-featured").innerHTML = `
+    <div class="row" style="margin-bottom:6px">
+      <b>投影中：${f.length}／${MAX_FEATURED} 則</b>
+      <span class="spacer"></span>
+      ${f.length ? `<button class="btn btn-small btn-ghost" data-cm-clear type="button">全部取消</button>` : ""}
+    </div>
+    ${fx || (other ? `<p class="small muted" style="margin:0">投影中的留言是另一場的，切換場次就看得到。</p>`
+      : `<p class="small muted" style="margin:0">還沒有挑留言。建議挑 3～5 則。</p>`)}`;
+  const sorted = [...cmAll].sort((a, b) => (a.hidden - b.hidden) || (b.likeCount || 0) - (a.likeCount || 0));
+  document.getElementById("cm-ctl-list").innerHTML = sorted.length
+    ? sorted.map((c) => cmLine(c)).join("")
+    : `<p class="muted" style="margin:0">這一場還沒有留言。</p>`;
+}
+
+document.getElementById("sec-comments").addEventListener("click", (e) => {
+  const s = e.target.closest("[data-cm-session]")?.dataset.cmSession;
+  if (s) { cmPicked = true; watchComments(s); renderComments(); return; }
+  const fid = e.target.closest("[data-cm-feature]")?.dataset.cmFeature;
+  if (fid) {
+    const f = featured();
+    const next = f.includes(fid) ? f.filter((x) => x !== fid) : [...f, fid].slice(0, MAX_FEATURED);
+    setFeatured(next);
+    return;
+  }
+  if (e.target.closest("[data-cm-clear]")) { setFeatured([]); return; }
+  const hid = e.target.closest("[data-cm-hide]")?.dataset.cmHide;
+  if (hid) {
+    const c = cmAll.find((x) => x.id === hid);
+    if (!c) return;
+    const hide = !c.hidden;
+    // 隱藏時順便從投影中拿掉
+    if (hide && featured().includes(hid)) setFeatured(featured().filter((x) => x !== hid));
+    updateDoc(doc(db, COL.comments, hid), { hidden: hide }).catch((err) => toast(`操作失敗：${err.message}`, "error"));
+  }
+});
