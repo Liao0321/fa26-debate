@@ -7,7 +7,7 @@ export function mountLiveBar({ onChange } = {}) {
   const bar = document.createElement("div");
   bar.className = "live-bar hidden";
   bar.innerHTML = `<div class="container live-bar-inner">
-    <span class="lb-label">目前進行中</span><span class="lb-title"></span><span class="lb-time"></span></div>`;
+    <span class="lb-rehearsal hidden">彩排</span><span class="lb-label">目前進行中</span><span class="lb-title"></span><span class="lb-time"></span></div>`;
   const header = document.getElementById("site-header");
   header.after(bar);
 
@@ -17,8 +17,11 @@ export function mountLiveBar({ onChange } = {}) {
     const list = orderedRundown(rundown, state);
     const i = currentIndex(list, state);
     const seg = list[i];
-    bar.classList.toggle("hidden", !seg);
-    if (seg) bar.querySelector(".lb-title").innerHTML = esc(seg.title);
+    const rehearsal = !!state?.rehearsal;
+    bar.classList.toggle("hidden", !seg && !rehearsal);
+    // 彩排模式：提醒大家現在投的票、留的言，正式比賽前會清掉
+    bar.querySelector(".lb-rehearsal").classList.toggle("hidden", !rehearsal);
+    bar.querySelector(".lb-title").innerHTML = seg ? esc(seg.title) : "彩排中，資料會在正式比賽前清除";
     onChange?.(state, list, i);
   };
   const tick = () => {

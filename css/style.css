@@ -611,9 +611,14 @@ details.card summary { cursor: pointer; }
 .live-bar .lb-time.is-over { color: #ff8c8f; }
 
 /* ---------- 後台：流程編輯 ---------- */
-.rd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.rd-item { border: 2px solid var(--ink); background: #fffdf9; padding: 10px 12px; }
-.rd-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.rd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rd-item { border: 2px solid var(--ink); background: #fffdf9; padding: 6px 10px; }
+.rd-item.open { padding: 10px 12px; box-shadow: var(--shadow-sm); }
+.rd-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rd-item.open .rd-head { margin-bottom: 8px; }
+.rd-name { all: unset; cursor: pointer; font-weight: 800; }
+.rd-name:hover { color: var(--orange-ink); text-decoration: underline; }
+.rd-item:not(.open) .rd-fields { display: none; }
 .rd-time { font-weight: 900; font-variant-numeric: tabular-nums; min-width: 3.2em; }
 .rd-tags .badge { font-size: 12px; padding: 0 8px; }
 .rd-fields { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -792,3 +797,5 @@ details.card[open] summary { margin-bottom: 10px; }
 .aw-ses summary { cursor: pointer; }
 .aw-mvps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .aw-mvp { display: flex; flex-direction: column; gap: 6px; }
+.ctl-list-more { margin: 4px 0; text-align: center; }
+.lb-rehearsal { background: var(--yellow); color: var(--ink); font-weight: 900; padding: 0 8px; margin-right: 6px; }

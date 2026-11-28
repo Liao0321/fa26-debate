@@ -115,9 +115,9 @@ function render() {
 
 function renderTopline(seg) {
   const s = data.settings;
-  document.getElementById("d-context").innerHTML = seg?.session
+  document.getElementById("d-context").innerHTML = (data.state?.rehearsal ? `<span class="d-rehearsal">彩排</span>` : "") + (seg?.session
     ? `<b>${esc(SESSIONS[seg.session].label)}</b>　題目：${esc(s.topics[seg.session])}`
-    : `<b>${esc(s.eventName)}</b>`;
+    : `<b>${esc(s.eventName)}</b>`);
   document.getElementById("d-conn").className = `d-conn ${data.online ? "" : "off"}`;
   document.getElementById("d-conn").title = data.online ? "已連線" : "離線中：倒數照常進行，連線後自動同步";
 }

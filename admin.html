@@ -21,7 +21,8 @@
         <a href="#sec-rundown">流程</a>
         <a href="#sec-roster">名單</a>
         <a href="#sec-current">目前名單</a>
-        <a href="#sec-tools">工具</a>
+        <a href="#sec-votes">評分統計</a>
+        <a href="#sec-tools">彩排與工具</a>
       </nav>
 
       <section class="section" id="sec-settings">
@@ -81,7 +82,7 @@
       <section class="section" id="sec-rundown">
         <h2 class="section-title">當天流程</h2>
         <div class="card">
-          <p style="margin-top:0">主控台和投影畫面都照這份流程走。可以改標題、時長、音樂、主持人提示，也可以調整順序、複製或刪除段落。</p>
+          <p style="margin-top:0">主控台和投影畫面都照這份流程走。按段落的標題或「修改」展開，可以改標題、時長、音樂、主持人提示；也可以調整順序、複製或刪除段落。</p>
           <ul class="small muted">
             <li><b>時長</b>填分鐘（可以有小數，例如 1.5）；填 0 ＝不倒數。<b>倒數到</b>填時間（例如 10:00），有填就不看時長。</li>
             <li><b>預定開始</b>只影響首頁賽程上顯示的時間；實際上一律等主控台按「下一項」才換段落。</li>
@@ -137,8 +138,24 @@
       </section>
 
       <section class="section" id="sec-tools">
-        <h2 class="section-title">工具</h2>
+        <h2 class="section-title">彩排與工具</h2>
         <div class="card">
+          <h3 style="margin-top:0">彩排模式</h3>
+          <p class="small muted" style="margin-top:0">彩排時打開：每一頁的上方、主控台和投影畫面都會標示「彩排」，提醒大家現在投的票、留的言之後會清掉。功能和正式比賽完全一樣。</p>
+          <div class="row">
+            <span id="rehearsal-state" class="badge badge-gray">讀取中…</span>
+            <button class="btn" id="rehearsal-btn" type="button" disabled>打開彩排模式</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">清除彩排資料</h3>
+          <p class="small" style="margin-top:0">彩排完、正式比賽前按一次。會清除：<b>所有評分、所有留言、頒獎結果（優勝組、MVP）、流程進度（回到「還沒開始」）、猜硬幣結果</b>，也會關閉彩排模式。</p>
+          <p class="small muted">會保留：名單、活動設定、題目、組名、流程、簡報連結、選手選好的發言人。</p>
+          <button class="btn btn-danger" id="wipe-btn" type="button">清除彩排資料</button>
+          <div class="small muted" id="wipe-status" style="margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">安全規則檢測</h3>
           <p style="margin-top:0">換過安全規則之後，請用不同身分的帳號打開「安全規則檢測」跑一次。</p>
           <a class="btn" href="rules-test.html">安全規則檢測</a>
         </div>
