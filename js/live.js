@@ -94,9 +94,15 @@ export function currentIndex(list, state) {
 // ---------- 計時 ----------
 const ms = (t) => (t?.toMillis ? t.toMillis() : typeof t === "number" ? t : null);
 
+// 主持人的段落（開場、介紹、宣布、讀留言、猜硬幣）、評審講評、頒獎都不計時：主持人自己控時
+// 只有選手發言、提問、休息、午餐、待機（倒數到某個時間）才在投影幕上倒數
+// 時長（durationSec）仍然用來排首頁賽程的預定時間
+export const UNTIMED_TYPES = ["host", "comments", "coin", "commentary", "ceremony"];
+export const segHasTimer = (seg) => !!seg && !UNTIMED_TYPES.includes(seg.type);
+
 // 進入一個段落時的倒數秒數；null ＝ 這段不倒數
 export function initialRemaining(seg) {
-  if (!seg) return null;
+  if (!segHasTimer(seg)) return null;
   const until = toMinutes(seg.untilTime);
   if (until != null) {
     const now = new Date(serverNow());

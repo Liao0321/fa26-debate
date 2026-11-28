@@ -6,13 +6,23 @@ import { startPage, login, db, COL, esc, watchSettings, teamName } from "./commo
 import {
   startClockSync, watchRundown, watchLive, orderedRundown, currentIndex, timing, fmtClock, endTimeText, serverNow,
 } from "./live.js";
-import { SESSIONS, SIDE_LABEL, TYPE_LABEL, fmtMinutes } from "./defaults.js";
+import { SESSIONS, SIDE_LABEL, TYPE_LABEL, fmtMinutes, LOOP_MUSIC } from "./defaults.js";
 import { SoundBoard } from "./sound.js";
+import { LocalMusic, musicPanel } from "./localmusic.js";
 import { slidesEmbedUrl } from "./slides.js";
 
 const stage = document.getElementById("stage");
 const toolbar = document.getElementById("toolbar");
 const sound = new SoundBoard();
+const music = new LocalMusic();
+
+// 這一段要播的音樂：依「🎵 選音樂」面板的設定（沒選＝不播）
+// 「網站內建」用的是後台流程裡設定的音樂（還沒開始＝待機音樂）
+const builtinOf = (seg) => (seg ? seg.music || null : "idle");
+const musicFor = (seg) => {
+  const k = builtinOf(seg);
+  return music.track(seg, k, LOOP_MUSIC.includes(k));
+};
 
 const data = { settings: null, rundown: [], state: null, teams: {}, online: true, ready: false };
 let started = false;
@@ -68,8 +78,7 @@ function render() {
   const seg = L[i] || null;
   const next = L[i + 1] || null;
 
-  // 音樂：還沒開始＝待機音樂；其他依段落設定
-  sound.setMusic(seg ? seg.music || null : "idle");
+  sound.setMusic(musicFor(seg));
 
   renderTopline(seg);
 
@@ -471,8 +480,8 @@ function tick() {
   if (key !== soundKey) { soundKey = key; prevRemaining = null; }
   if (t.hasTimer && t.running) {
     if (prevRemaining != null) {
-      if (prevRemaining > 0 && t.remaining <= 0) sound.effect("bell");
-      else if (warn > 0 && prevRemaining > warn && t.remaining <= warn) sound.effect("ding");
+      if (prevRemaining > 0 && t.remaining <= 0) sound.effect(music.effect("bell"));
+      else if (warn > 0 && prevRemaining > warn && t.remaining <= warn) sound.effect(music.effect("ding"));
     }
     prevRemaining = t.remaining;
   } else {
@@ -496,6 +505,28 @@ function enableSound() {
 gate.querySelector("button").addEventListener("click", enableSound);
 document.getElementById("sound-btn").addEventListener("click", enableSound);
 
+// ---------- 本機音樂：工具列上的小播放器＋選音樂面板 ----------
+const musicUi = musicPanel({
+  music,
+  panel: document.getElementById("music-panel"),
+  getSegments: () => list(),
+  builtinOf,
+  onChange: () => render(),
+});
+document.getElementById("music-btn").addEventListener("click", () => { musicUi.toggle(); showToolbar(); });
+const mpToggle = document.getElementById("mp-toggle");
+const mpName = document.getElementById("mp-name");
+mpToggle.addEventListener("click", () => sound.togglePause());
+sound.onChange = (st) => {
+  mpName.textContent = st.label || "（這一段不播音樂）";
+  mpName.title = st.label;
+  mpToggle.textContent = st.playing ? "⏸" : "▶";
+  mpToggle.disabled = !st.hasTrack;
+  mpToggle.title = st.playing ? "暫停" : "播放";
+};
+sound.changed();
+music.ready.then(() => render());
+
 const vol = document.getElementById("volume");
 vol.value = sound.volume;
 vol.addEventListener("input", () => sound.setVolume(Number(vol.value)));
@@ -506,7 +537,7 @@ function toggleFullscreen() {
 }
 document.getElementById("fullscreen").addEventListener("click", () => { toggleFullscreen(); focusSlides(); });
 // 不小心點到投影畫面（不是簡報）時，焦點也交回給簡報
-document.addEventListener("click", (e) => { if (!e.target.closest("input, button")) focusSlides(); });
+document.addEventListener("click", (e) => { if (!e.target.closest("input, button, select, .music-panel")) focusSlides(); });
 document.addEventListener("keydown", (e) => {
   if (e.target.closest("input, textarea, select")) return;
   if (e.key === "f" || e.key === "F") toggleFullscreen();
@@ -519,6 +550,7 @@ function showToolbar() {
   document.body.classList.remove("no-cursor");
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
+    if (musicUi.isOpen()) return showToolbar(); // 選音樂面板開著時，工具列不要藏起來
     toolbar.classList.add("is-hidden");
     document.body.classList.add("no-cursor");
   }, 3000);

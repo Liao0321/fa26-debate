@@ -6,7 +6,7 @@ import {
 } from "./common.js";
 import {
   startClockSync, watchRundown, watchLive, orderedRundown, currentIndex, timing, fmtClock, endTimeText,
-  enterSegment, pause, resume, adjust, restart, setSpeakerDone, liveUpdate, initialRemaining,
+  enterSegment, pause, resume, adjust, restart, setSpeakerDone, liveUpdate, initialRemaining, segHasTimer,
 } from "./live.js";
 import { SESSIONS, SIDE_LABEL, TYPE_LABEL, planTimes, fmtMinutes } from "./defaults.js";
 
@@ -260,7 +260,7 @@ function renderList() {
     <li class="${n === i ? "is-now" : ""} ${i >= 0 && n < i ? "is-past" : ""}" data-jump="${n}">
       <span class="ctl-list-time">${fmtMinutes(times[n].start)}</span>
       <span class="ctl-list-title">${sideBadge(s)} ${esc(s.title)}</span>
-      <span class="ctl-list-dur">${s.untilTime ? `到 ${esc(s.untilTime)}` : s.durationSec ? fmtClock(s.durationSec) : ""}</span>
+      <span class="ctl-list-dur">${!segHasTimer(s) ? "不計時" : s.untilTime ? `到 ${esc(s.untilTime)}` : s.durationSec ? fmtClock(s.durationSec) : ""}</span>
     </li>`).join("")}</ol>`;
 }
 

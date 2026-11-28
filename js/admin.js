@@ -11,7 +11,7 @@ import {
   TOPIC_OPTIONS, TEAM_IDS, SESSIONS, SIDE_LABEL, TYPE_LABEL, MUSIC,
   buildDefaultRundown, makeSegment, planTimes, fmtMinutes, toMinutes,
 } from "./defaults.js";
-import { watchRundown } from "./live.js";
+import { watchRundown, segHasTimer } from "./live.js";
 import { isSlidesUrl, slidesEditUrl } from "./slides.js";
 
 const gate = document.getElementById("gate");
@@ -417,6 +417,7 @@ function segTags(s) {
   if (s.round) tags.push(`<span class="badge">第 ${s.round} 輪</span>`);
   tags.push(`<span class="badge badge-orange">${esc(TYPE_LABEL[s.type] || s.type)}</span>`);
   if (s.side) tags.push(`<span class="badge badge-${s.side}">${SIDE_LABEL[s.side]}</span>`);
+  if (!segHasTimer(s)) tags.push(`<span class="badge badge-gray" title="主持人控時；時長只用來排賽程">不倒數</span>`);
   if (s.openVote) tags.push(`<span class="badge badge-yellow">開放第 ${s.openVote.round} 輪評分</span>`);
   if (s.showSlides) tags.push(`<span class="badge badge-gray">顯示${SIDE_LABEL[s.showSlides]}簡報</span>`);
   return tags.join(" ");
