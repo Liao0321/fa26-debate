@@ -249,6 +249,35 @@ service cloud.firestore {
         && request.resource.data.speakerDoneAt == request.time;
     }
 
+    // debate_votes/{session}_{round}_{email}：評分
+    //   讀：控制者（主控台、投影畫面要顯示人數）、管理員看統計；其他人只能讀自己的票
+    //   寫：只有那一輪開放中才能寫；文件 ID 一定是自己的 email；pro、con 是 1～5 的整數；該場選手不能投
+    //   倍數不存在票裡，統計時依名單計算
+    function dLiveVote() {
+      return get(/databases/$(database)/documents/debate_live/state).data.get('voteOpen', null);
+    }
+    function dValidVote(voteId) {
+      let d = request.resource.data;
+      let open = dLiveVote();
+      return isSchool()
+        && d.keys().hasOnly(['session', 'round', 'email', 'pro', 'con', 'updatedAt'])
+        && d.session in ['am', 'pm']
+        && d.round in [1, 2, 3]
+        && d.email == myEmail()
+        && voteId == d.session + '_' + string(d.round) + '_' + myEmail()
+        && d.pro is int && d.pro >= 1 && d.pro <= 5
+        && d.con is int && d.con >= 1 && d.con <= 5
+        && d.updatedAt == request.time
+        && open != null && open.get('session', null) == d.session && open.get('round', null) == d.round
+        && !(dMyCategory() in [d.session + '_pro', d.session + '_con']);
+    }
+    match /debate_votes/{voteId} {
+      allow read: if dCanControl() || (isSchool() && (resource == null || resource.data.email == myEmail()));
+      allow create: if dValidVote(voteId);
+      allow update: if dValidVote(voteId) && resource.data.email == myEmail();
+      allow delete: if dIsAdmin();
+    }
+
     // debate_clock/{uid}：校時用。每人只能寫自己的，而且只能寫「伺服器現在的時間」
     match /debate_clock/{uid} {
       allow read: if isSchool() && request.auth.uid == uid;

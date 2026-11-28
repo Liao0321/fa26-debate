@@ -6,7 +6,7 @@ import {
 } from "./common.js";
 import {
   startClockSync, watchRundown, watchLive, orderedRundown, currentIndex, timing, fmtClock, endTimeText,
-  enterSegment, pause, resume, adjust, restart, setSpeakerDone, liveUpdate, initialRemaining, segHasTimer,
+  enterSegment, pause, resume, adjust, restart, setSpeakerDone, liveUpdate, initialRemaining, segHasTimer, voteCounter,
 } from "./live.js";
 import { SESSIONS, SIDE_LABEL, TYPE_LABEL, planTimes, fmtMinutes } from "./defaults.js";
 
@@ -44,7 +44,7 @@ startPage({
       startClockSync();
       watchSettings((s) => { settings = s; renderAll(); });
       watchRundown((r) => { rundown = r; renderAll(); });
-      watchLive((s, meta) => { state = s; online = meta.online; renderAll(); });
+      watchLive((s, meta) => { state = s; online = meta.online; followVotes(s?.voteOpen); renderAll(); });
       onSnapshot(collection(db, COL.teams), (snap) => {
         teams = {};
         snap.forEach((d) => { teams[d.id] = d.data(); });
@@ -194,6 +194,14 @@ document.getElementById("main-buttons").addEventListener("click", (e) => {
 });
 
 // ---------- 依段落出現的區塊 ----------
+// 已投票人數（只看人數，不看分數）
+let voteCount = null;
+const followVotes = voteCounter((n) => {
+  voteCount = n;
+  const el = document.querySelector("[data-votecount]");
+  if (el) el.textContent = n != null ? `已投票：${n} 人` : "";
+});
+
 function renderExtra() {
   const box = document.getElementById("extra");
   const seg = cur();
@@ -226,7 +234,7 @@ function renderExtra() {
           <div style="flex:1 1 200px">
             <b>評分：${SESSIONS[target.session].label}第 ${target.round} 輪</b>
             <div class="small muted">進入「休息」「評審講評」時會自動開放，離開時自動關閉；也可以手動開關。</div>
-            <div class="small muted">投票人數：第 4 階段完成後顯示</div>
+            <div class="small"><b data-votecount>${isOpen && voteCount != null ? `已投票：${voteCount} 人` : ""}</b></div>
           </div>
           <span class="badge ${isOpen ? "badge-orange" : "badge-gray"}">${isOpen ? "開放中" : "已關閉"}</span>
           <button class="btn ${isOpen ? "btn-danger" : "btn-primary"}" data-vote="${isOpen ? "close" : "open"}" type="button">${isOpen ? "關閉評分" : "開放評分"}</button>

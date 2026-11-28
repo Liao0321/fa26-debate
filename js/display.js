@@ -4,7 +4,7 @@ import { setPixelText } from "./pixelnum.js";
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { startPage, login, db, COL, esc, watchSettings, teamName } from "./common.js";
 import {
-  startClockSync, watchRundown, watchLive, orderedRundown, currentIndex, timing, fmtClock, endTimeText, serverNow,
+  startClockSync, watchRundown, watchLive, voteCounter, orderedRundown, currentIndex, timing, fmtClock, endTimeText, serverNow,
 } from "./live.js";
 import { SESSIONS, SIDE_LABEL, TYPE_LABEL, fmtMinutes, LOOP_MUSIC } from "./defaults.js";
 import { SoundBoard } from "./sound.js";
@@ -56,7 +56,7 @@ function subscribe() {
   const ready = () => { if (++got >= 3) data.ready = true; render(); };
   watchSettings((s) => { data.settings = s; document.getElementById("tb-name").textContent = s.eventName; ready(); });
   watchRundown((r) => { data.rundown = r; ready(); });
-  watchLive((s, meta) => { data.state = s; data.online = meta.online; ready(); });
+  watchLive((s, meta) => { data.state = s; data.online = meta.online; followVotes(s?.voteOpen); ready(); });
   onSnapshot(collection(db, COL.teams), (snap) => {
     data.teams = {};
     snap.forEach((d) => { data.teams[d.id] = d.data(); });
@@ -160,6 +160,7 @@ function renderSegment(seg, next) {
       ${panel ? `<aside class="d-side-panel">${panel}</aside>` : ""}
     </div>`;
   drawQr();
+  showVoteCount();
   tick();
 }
 
@@ -188,8 +189,18 @@ function votePanelHtml(seg) {
     <div class="d-qr-card">
       <div class="d-qr" id="vote-qr"></div>
       <div class="d-vote-state ${isOpen ? "" : "off"}">${round ? `第 ${round} 輪評分${isOpen ? "開放中" : "已關閉"}` : "評分"}</div>
+      <div class="d-vote-count" data-votecount></div>
     </div>
     ${seg.type === "break" ? `<div class="d-info" data-endinfo></div>` : ""}`;
+}
+
+// 已投票人數：只顯示人數，不顯示分數
+let voteCount = null;
+const followVotes = voteCounter((n) => { voteCount = n; showVoteCount(); });
+function showVoteCount() {
+  document.querySelectorAll("[data-votecount]").forEach((el) => {
+    el.textContent = voteCount == null ? "" : `已有 ${voteCount} 人評分`;
+  });
 }
 
 function voteUrl() {
