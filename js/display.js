@@ -10,6 +10,7 @@ import { SESSIONS, SIDE_LABEL, TYPE_LABEL, fmtMinutes, LOOP_MUSIC } from "./defa
 import { SoundBoard } from "./sound.js";
 import { LocalMusic, musicPanel } from "./localmusic.js";
 import { slidesEmbedUrl } from "./slides.js";
+import { renderCeremony as drawCeremony, stopCeremony } from "./ceremony.js";
 
 const stage = document.getElementById("stage");
 const toolbar = document.getElementById("toolbar");
@@ -24,7 +25,7 @@ const musicFor = (seg) => {
   return music.track(seg, k, LOOP_MUSIC.includes(k));
 };
 
-const data = { settings: null, rundown: [], state: null, teams: {}, online: true, ready: false };
+const data = { settings: null, rundown: [], state: null, teams: {}, awards: null, online: true, ready: false };
 let started = false;
 
 startPage({
@@ -62,6 +63,11 @@ function subscribe() {
     snap.forEach((d) => { data.teams[d.id] = d.data(); });
     render();
   }, (e) => console.warn(e));
+  // 頒獎結果（優勝組、花的數量、MVP）：只有控制者讀得到
+  onSnapshot(doc(db, COL.awards, "results"), (snap) => {
+    data.awards = snap.exists() ? snap.data() : null;
+    render();
+  }, (e) => console.warn(e));
 }
 
 const list = () => orderedRundown(data.rundown, data.state);
@@ -87,12 +93,14 @@ function render() {
     seg?.id, seg?.title, next?.title, data.state?.coinFirst, data.state?.coinAt, data.state?.voteOpen,
     data.settings.topics, data.settings.teamNames, data.settings.eventName,
     data.teams, showCommentsHere(seg) ? featuredList() : null,
+    seg?.type === "ceremony" ? [data.state?.ceremonyStep || 0, data.state?.ceremonyAt || null, awardsKey()] : null,
   ]);
   // 簡報：先把「這一場」（或下一段所屬那一場）的兩份簡報載好
   ensureSlides(seg?.session || next?.session || null);
 
   if (viewKey === lastViewKey) return;
   lastViewKey = viewKey;
+  stopCeremony();
 
   const slideTeam = seg?.showSlides && seg.session ? `${seg.session}_${seg.showSlides}` : null;
   if (slideTeam && slideFrames[slideTeam]) return renderSlidesSegment(seg, next, slideTeam);
@@ -361,15 +369,21 @@ function renderStandby() {
     </div>`;
 }
 
-// ---------- 頒獎典禮（第 6 階段完成揭曉動畫） ----------
-function renderCeremony(seg) {
-  stage.innerHTML = `
-    <div class="d-band"></div>
-    <div class="d-center">
-      <span class="d-pill">AWARDS</span>
-      <h1 class="d-title" style="font-size:clamp(48px,9vw,180px)">${esc(seg.title)}</h1>
-      <div class="d-placeholder">揭曉動畫會在第 6 階段完成</div>
-    </div>`;
+// ---------- 頒獎典禮（動畫在 ceremony.js） ----------
+// 主控台按下某一步（ceremonyAt 改變）才播動畫；剛打開這頁或重新整理時，直接顯示那一步的結果
+let seenCeremonyAt = undefined;
+const awardsKey = () => {
+  const a = data.awards;
+  return a ? JSON.stringify([a.am, a.pm, a.mvp, a.candidates]) : null;
+};
+function renderCeremony() {
+  const at = data.state?.ceremonyAt || null;
+  const animate = seenCeremonyAt !== undefined && at !== null && at !== seenCeremonyAt;
+  seenCeremonyAt = at;
+  drawCeremony({
+    stage, step: Number(data.state?.ceremonyStep) || 0, animate,
+    awards: data.awards, teams: data.teams, settings: data.settings, sound, music,
+  });
 }
 
 // ---------- 擲硬幣 ----------

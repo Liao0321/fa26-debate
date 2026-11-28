@@ -13,7 +13,7 @@ const MAP_KEY = "debate-music-map";   // 段落 id → 檔名 / BUILTIN / ""
 const LOOP_KEY = "debate-music-loop"; // 段落 id → true / false
 export const BUILTIN = "@builtin";    // 用網站 audio/ 資料夾裡的內建檔案
 export const BEFORE_START = "@before"; // 流程還沒開始時（沒有目前段落）
-export const EFFECTS = { bell: "時間到的鈴聲", ding: "快結束的提醒聲" };
+export const EFFECTS = { bell: "時間到的鈴聲", ding: "快結束的提醒聲", drumroll: "頒獎揭曉前的鼓聲", celebrate: "揭曉後的慶祝音樂" };
 
 // ---------- IndexedDB：存檔案本身，重新整理後還在 ----------
 function openDb() {

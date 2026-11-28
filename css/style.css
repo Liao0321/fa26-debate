@@ -781,3 +781,14 @@ details.card[open] summary { margin-bottom: 10px; }
 .ctl-cm-acts { display: flex; flex-direction: column; gap: 6px; flex: none; }
 .ctl-cm-acts .btn { min-height: 40px; }
 .ctl-cm-num { flex: none; width: 1.6em; height: 1.6em; display: grid; place-items: center; background: var(--orange); border: 2px solid var(--ink); font-weight: 900; }
+
+/* ---------- 主控台：頒獎典禮 ---------- */
+.aw-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.aw-step { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 64px; line-height: 1.25; }
+.aw-step b { font-family: var(--pixel); font-size: 12px; }
+.aw-step small { font-size: 11px; font-weight: 700; opacity: 0.8; }
+.aw-warn { color: var(--red); font-weight: 700; }
+.aw-ses { border-top: 2px dashed #e3ddd2; padding: 8px 0; }
+.aw-ses summary { cursor: pointer; }
+.aw-mvps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.aw-mvp { display: flex; flex-direction: column; gap: 6px; }

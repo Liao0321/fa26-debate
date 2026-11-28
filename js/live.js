@@ -197,6 +197,9 @@ export function enterSegment(list, index, state) {
     // 誰可以按「我說完了」：哪一組（例如 am_pro）的第幾輪發言人；不是選手發言的段落就是 null
     speakerTeam: seg.type === "speech" && seg.session && seg.side ? `${seg.session}_${seg.side}` : null,
     speakerRound: seg.type === "speech" && seg.speakerFromRound ? seg.speakerFromRound : null,
+    // 頒獎典禮：每次換段落都回到開場畫面（彩排按過的步驟不會留到正式典禮）
+    ceremonyStep: 0,
+    ceremonyAt: null,
   });
 }
 

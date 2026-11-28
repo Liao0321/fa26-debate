@@ -339,3 +339,156 @@
 .d-comment-meta { margin-top: 0.6vh; color: var(--muted); font-size: 0.8em; font-weight: 700; display: flex; gap: 1em; }
 .d-comment-meta span { color: var(--orange-deep); }
 .d-comments.n4 .d-comment p, .d-comments.n5 .d-comment p { font-size: 1.15em; }
+
+/* ============================================================
+   頒獎典禮（js/ceremony.js）
+   ============================================================ */
+.cer {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: linear-gradient(#1d1430 0%, #2b1d3f 52%, #1b1712 100%);
+  color: #fff;
+}
+.cer svg { display: block; width: 100%; height: auto; }
+
+/* 布幕 */
+.cer-curtain {
+  position: absolute; top: 0; bottom: 22%; width: 9vw; z-index: 1;
+  background: repeating-linear-gradient(90deg, #b3262b 0 1.4vw, #8e1c21 1.4vw 2.2vw);
+  box-shadow: inset 0 -1vh 0 #6b1418;
+}
+.cer-curtain.left { left: 0; clip-path: polygon(0 0, 100% 0, 55% 100%, 0 100%); }
+.cer-curtain.right { right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%, 45% 100%); }
+.cer-valance {
+  position: absolute; top: 0; left: 0; right: 0; height: 4vh; z-index: 2;
+  background: repeating-linear-gradient(90deg, #b3262b 0 3vw, #8e1c21 3vw 3.4vw);
+  border-bottom: 0.6vh solid #ffd24d;
+}
+
+.cer-kicker { display: block; font-family: var(--pixel); font-size: clamp(12px, 1.3vw, 26px); color: var(--orange); letter-spacing: 0.1em; margin-bottom: 0.6vh; }
+.cer-heading {
+  position: absolute; top: 6vh; left: 0; right: 0; z-index: 3; text-align: center;
+  font-size: clamp(28px, 3.4vw, 64px); font-weight: 900; text-shadow: 0 0.4vh 0 #000;
+}
+.cer.revealed .cer-heading { opacity: 0; transition: opacity 0.4s; }
+
+/* 觀眾席 */
+.cer-audience { position: absolute; left: 0; right: 0; bottom: 0; height: 14vh; z-index: 6; background: linear-gradient(transparent, #0d0a08 70%); }
+.cer-fan { position: absolute; bottom: -1.5vh; width: 6.4vw; transform: translateX(-50%); animation: fan-bob 1.4s ease-in-out infinite; }
+@keyframes fan-bob { 50% { translate: 0 -0.9vh; } }
+
+/* 開場 */
+.cer-intro { display: flex; align-items: center; justify-content: center; }
+.cer-intro-box { position: relative; z-index: 3; text-align: center; margin-top: -6vh; }
+.cer-intro-title { margin: 0 0 3vh; font-size: clamp(48px, 8vw, 160px); font-weight: 900; line-height: 1.1; color: #ffd24d; text-shadow: 0 0.8vh 0 #a94a05; }
+.cer-plan { list-style: none; margin: 0 auto; padding: 0; display: flex; gap: 2vw; justify-content: center; }
+.cer-plan li { background: #fff; color: var(--ink); border: 0.5vh solid #000; box-shadow: 0.6vh 0.6vh 0 #000; padding: 1.4vh 1.6vw; font-size: 1.4em; font-weight: 900; display: flex; align-items: center; gap: 0.8vw; }
+.cer-plan b { font-family: var(--pixel); background: var(--orange); color: #000; padding: 0.6vh 0.7vw; font-size: 0.8em; }
+
+/* 舞台地板 */
+.cer-floor {
+  position: absolute; left: 6vw; right: 6vw; top: 68%; height: 18%; z-index: 1;
+  background: repeating-linear-gradient(90deg, #a0632a 0 6vw, #8a5222 6vw 6.3vw);
+  border-top: 1vh solid #c98a4b;
+  box-shadow: inset 0 1.2vh 0 rgba(0, 0, 0, 0.18);
+}
+
+/* 兩組選手 */
+.cer-group { position: absolute; bottom: 30%; z-index: 3; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; transition: transform 0.4s; }
+.cer-team { font-size: clamp(16px, 1.6vw, 32px); font-weight: 900; background: #fff; color: var(--ink); border: 0.4vh solid #000; padding: 0.4vh 1vw; margin-bottom: 1.6vh; white-space: nowrap; display: flex; gap: 0.6vw; align-items: center; }
+.cer-side { padding: 0.1vh 0.6vw; font-size: 0.85em; }
+.cer-group.pro .cer-side { background: var(--pro); color: var(--pro-on); }
+.cer-group.con .cer-side { background: var(--con); color: var(--con-on); }
+.cer-people { display: flex; gap: 1.4vw; align-items: flex-end; }
+.cer-player { width: 6.2vw; display: flex; flex-direction: column; align-items: center; animation: idle-sway 2.4s ease-in-out infinite; }
+.cer-name { margin-top: 0.6vh; font-size: clamp(12px, 1.15vw, 24px); font-weight: 900; background: rgba(0, 0, 0, 0.6); padding: 0.2vh 0.5vw; white-space: nowrap; }
+@keyframes idle-sway { 50% { translate: 0 -0.4vh; } }
+.cer-group.flinch .cer-people { animation: flinch 0.35s; }
+@keyframes flinch { 30% { translate: 0.4vw 0; } 60% { translate: -0.4vw 0; } }
+.cer .cer-crown { width: 0; opacity: 0; transform: scale(0.3); }
+.cer .cer-group.winner .cer-crown { width: 2.6vw; opacity: 1; transform: none; transition: all 0.6s cubic-bezier(.2, .8, .3, 1.4); }
+.cer-group.winner .cer-player { animation: cheer 0.55s ease-in-out infinite alternate; }
+.cer-group.winner .cer-player:nth-child(2) { animation-delay: 0.18s; }
+.cer-group.winner .cer-player:nth-child(3) { animation-delay: 0.36s; }
+@keyframes cheer { to { translate: 0 -2.6vh; } }
+.cer.revealed .cer-group:not(.winner) .cer-player { animation: clap 0.8s ease-in-out infinite; }
+@keyframes clap { 50% { translate: 0 -0.8vh; } }
+
+/* 聚光燈 */
+.cer-spot { position: absolute; top: 0; bottom: 14%; width: 36vw; transform: translateX(-50%); z-index: 2; pointer-events: none; opacity: 0; transition: opacity 0.8s;
+  background: linear-gradient(rgba(255, 246, 200, 0.05), rgba(255, 236, 150, 0.32)); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); }
+.cer-spot.on { opacity: 1; }
+
+/* 花的數量 */
+.cer-count { position: absolute; top: 81%; z-index: 8; transform: translateX(-50%); display: flex; align-items: center; gap: 0.5vw; background: #fff; color: var(--ink); border: 0.4vh solid #000; padding: 0.3vh 1vw; font-size: clamp(16px, 1.8vw, 36px); }
+.cer-count b { font-family: var(--pixel); font-size: 0.85em; min-width: 2ch; text-align: center; }
+.cer-count.bump { animation: bump 0.25s; }
+@keyframes bump { 50% { transform: translateX(-50%) scale(1.25); } }
+
+/* 花堆、番茄、飛行中的東西 */
+.cer-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+#cer-fly { z-index: 7; }
+.cer-proj { position: absolute; left: 0; top: 0; width: 3vw; will-change: transform; }
+.cer-flower { position: absolute; width: 3vw; transform: translate(-50%, -50%) rotate(var(--r)); }
+.cer-flower.pop { animation: land 0.35s cubic-bezier(.2, .8, .3, 1.6); }
+@keyframes land { from { transform: translate(-50%, -80%) rotate(var(--r)) scale(1.3); } }
+.cer-splat { position: absolute; width: 4vw; transform: translate(-50%, -50%); animation: splat 2.2s ease-in forwards; }
+@keyframes splat {
+  0% { transform: translate(-50%, -50%) scale(0.4, 1.4); }
+  12% { transform: translate(-50%, -50%) scale(1.15, 0.85); opacity: 1; }
+  45% { transform: translate(-50%, -50%) scale(1, 1); opacity: 1; }
+  100% { transform: translate(-50%, -30%) scale(0.9, 0.6); opacity: 0; }
+}
+
+/* 揭曉橫幅 */
+.cer-banner-slot { position: absolute; top: 5vh; left: 0; right: 0; z-index: 8; display: flex; justify-content: center; pointer-events: none; }
+.cer-winner { display: flex; flex-direction: column; align-items: center; padding: 1.4vh 3vw; border: 0.6vh solid #000; box-shadow: 0.9vh 0.9vh 0 #000; font-weight: 900; animation: pop-in 0.6s cubic-bezier(.2, .8, .3, 1.4) both; }
+.cer-winner small { font-size: clamp(16px, 1.6vw, 32px); }
+.cer-winner span { font-size: clamp(32px, 4.4vw, 88px); line-height: 1.15; }
+.cer-winner.pro { background: var(--pro); color: var(--pro-on); }
+.cer-winner.con { background: var(--con); color: var(--con-on); }
+.cer-winner.none { background: #fff; color: var(--muted); font-size: 1.4em; }
+.cer-award {
+  position: absolute; left: 50%; bottom: 15vh; z-index: 9; transform: translateX(-50%);
+  background: var(--orange); color: #000; border: 0.6vh solid #000; box-shadow: 0.9vh 0.9vh 0 #000;
+  padding: 1.4vh 3vw; font-size: clamp(28px, 3.4vw, 68px); font-weight: 900; white-space: nowrap;
+  animation: award-in 0.6s cubic-bezier(.2, .8, .3, 1.4) both, award-pulse 1.6s 0.6s ease-in-out infinite;
+}
+@keyframes award-in { from { transform: translate(-50%, 6vh); opacity: 0; } }
+@keyframes award-pulse { 50% { transform: translateX(-50%) scale(1.05); } }
+
+/* 彩帶 */
+.cer-confetti { position: absolute; inset: 0; z-index: 10; pointer-events: none; overflow: hidden; }
+.cer-confetti i { position: absolute; top: -4vh; animation: confetti-fall linear forwards; }
+@keyframes confetti-fall {
+  to { transform: translate(var(--sway), 112vh) rotate(720deg); }
+}
+
+/* MVP 拉霸機 */
+.slots { position: absolute; top: 19vh; left: 0; right: 0; z-index: 3; display: flex; justify-content: center; gap: 6vw; }
+.slot { position: relative; width: 32vw; background: #ff8a1f; border: 0.7vh solid #000; box-shadow: 1vh 1vh 0 #000, inset 0 -1.2vh 0 #d9620a; padding: 1.6vh 1.6vw 2vh; display: flex; flex-direction: column; align-items: center; gap: 1.4vh; }
+.slot-top { background: #141414; color: #ffd24d; padding: 0.8vh 1.6vw; border: 0.4vh solid #ffd24d; }
+.slot-label { font-size: clamp(20px, 2.2vw, 44px); font-weight: 900; }
+.slot-lights { display: flex; gap: 1vw; }
+.slot-lights i { width: 1.2vh; height: 1.2vh; background: #fff6d6; animation: blink 0.8s steps(1) infinite; }
+.slot-lights i:nth-child(2n) { animation-delay: 0.4s; background: #ffd24d; }
+.slot.spinning .slot-lights i { animation-duration: 0.25s; }
+.slot-window { position: relative; width: 100%; height: 14vh; overflow: hidden; background: #fff; border: 0.6vh solid #000; }
+.slot-strip { will-change: transform; }
+.slot-item { height: 14vh; display: flex; align-items: center; justify-content: center; font-size: min(8vh, 4.4vw); font-weight: 900; color: var(--ink); white-space: nowrap; }
+.slot.spinning .slot-strip { filter: blur(0.15vh); }
+.slot-glass { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0.28), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.28)); }
+.slot.stopped .slot-window { animation: win-flash 0.5s steps(1) 4; }
+.slot.stopped .slot-item:last-child { color: var(--orange-deep); }
+@keyframes win-flash { 50% { background: #ffd24d; } }
+.slot-role { min-height: 1.4em; font-size: 1.3em; font-weight: 900; color: #000; visibility: hidden; }
+.slot.stopped .slot-role { visibility: visible; animation: pop-in 0.5s cubic-bezier(.2, .8, .3, 1.4) both; }
+.slot-lever { position: absolute; right: -3.4vw; top: 22%; width: 2.6vw; height: 16vh; }
+.slot-lever i { position: absolute; left: 50%; bottom: 0; width: 0.8vw; height: 100%; background: #9a948c; border: 0.3vh solid #000; transform-origin: bottom; transform: translateX(-50%); transition: transform 0.35s; }
+.slot-lever b { position: absolute; left: 50%; top: -2vh; width: 2.6vw; height: 2.6vw; background: #e5484d; border: 0.4vh solid #000; transform: translateX(-50%); transition: top 0.35s; }
+.slot.pull .slot-lever i { transform: translateX(-50%) scaleY(0.35); transition-delay: 0s; }
+.slot.pull .slot-lever b { top: 9vh; }
+.slot.spinning .slot-lever i, .slot.stopped .slot-lever i { transform: translateX(-50%); }
+.slot.spinning .slot-lever b, .slot.stopped .slot-lever b { top: -2vh; }
+.cer-flowers .cer-award { bottom: auto; top: 24vh; padding: 1vh 2.4vw; font-size: clamp(22px, 2.7vw, 54px); }
