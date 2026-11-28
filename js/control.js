@@ -102,7 +102,7 @@ function renderNow() {
   const seg = L[i];
   if (!state || !seg) {
     box.innerHTML = `
-      <div class="row"><span class="tag">STANDBY</span>${connDot()}</div>
+      <div class="row">${state?.rehearsal ? `<span class="badge badge-yellow">彩排模式</span>` : ""}<span class="tag">STANDBY</span>${connDot()}</div>
       <h2 style="margin:10px 0">流程還沒開始</h2>
       <p class="muted small" style="margin-top:0">按下面的按鈕，投影畫面就會從第一段「${esc(L[0]?.title || "")}」開始。</p>
       <button class="btn btn-primary btn-big ctl-wide" id="start-btn" type="button">▶ 開始流程</button>`;
@@ -111,7 +111,7 @@ function renderNow() {
   }
   const next = L[i + 1];
   box.innerHTML = `
-    <div class="row"><span class="tag">NOW ${i + 1} / ${L.length}</span>${sideBadge(seg)}<span class="muted small">${esc(segLabel(seg))}</span><span class="spacer"></span>${connDot()}</div>
+    <div class="row">${state?.rehearsal ? `<span class="badge badge-yellow">彩排模式</span>` : ""}<span class="tag">NOW ${i + 1} / ${L.length}</span>${sideBadge(seg)}<span class="muted small">${esc(segLabel(seg))}</span><span class="spacer"></span>${connDot()}</div>
     <h2 class="now-title">${esc(seg.title)}</h2>
     ${seg.type === "speech" ? `<p style="margin:4px 0 0">🎤 發言人：<b>${esc(speakerOf(seg) || "（選手還沒選）")}</b></p>` : ""}
     <div class="now-timer" id="now-timer"></div>
@@ -278,19 +278,32 @@ document.getElementById("extra").addEventListener("click", (e) => {
 });
 
 // ---------- 完整流程清單 ----------
+// 平常只顯示目前前 2 段、後 5 段，按「展開全部」才列出整天的流程
+let showAllRundown = false;
 function renderList() {
   const L = list();
   const i = idx();
   const times = planTimes(L);
-  document.getElementById("rundown-list").innerHTML = `<ol class="ctl-list">${L.map((s, n) => `
+  const from = showAllRundown ? 0 : Math.max(0, i - 2);
+  const to = showAllRundown ? L.length : Math.min(L.length, Math.max(i, 0) + 6);
+  const hidden = L.length - (to - from);
+  document.getElementById("rundown-list").innerHTML = `
+    ${from > 0 ? `<p class="small muted ctl-list-more">⋯ 前面還有 ${from} 段</p>` : ""}
+    <ol class="ctl-list" start="${from + 1}">${L.slice(from, to).map((s, k) => {
+      const n = from + k;
+      return `
     <li class="${n === i ? "is-now" : ""} ${i >= 0 && n < i ? "is-past" : ""}" data-jump="${n}">
       <span class="ctl-list-time">${fmtMinutes(times[n].start)}</span>
       <span class="ctl-list-title">${sideBadge(s)} ${esc(s.title)}</span>
       <span class="ctl-list-dur">${!segHasTimer(s) ? "不計時" : s.untilTime ? `到 ${esc(s.untilTime)}` : s.durationSec ? fmtClock(s.durationSec) : ""}</span>
-    </li>`).join("")}</ol>`;
+    </li>`;
+    }).join("")}</ol>
+    ${to < L.length && !showAllRundown ? `<p class="small muted ctl-list-more">⋯ 後面還有 ${L.length - to} 段</p>` : ""}
+    ${hidden > 0 || showAllRundown ? `<button class="btn btn-small" data-rundown-all type="button" style="margin-top:8px">${showAllRundown ? "只顯示前後幾段" : `展開全部 ${L.length} 段`}</button>` : ""}`;
 }
 
 document.getElementById("rundown-list").addEventListener("click", async (e) => {
+  if (e.target.closest("[data-rundown-all]")) { showAllRundown = !showAllRundown; renderList(); return; }
   const li = e.target.closest("[data-jump]");
   if (!li) return;
   const n = Number(li.dataset.jump);

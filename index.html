@@ -20,11 +20,6 @@
       <h1 id="hero-title">FA26<br><span class="hl">辯論比賽</span></h1>
     </section>
 
-    <section class="section hidden" id="now-section">
-      <h2 class="section-title">目前進度</h2>
-      <div class="card now-mini" id="now-mini"></div>
-    </section>
-
     <section class="section">
       <h2 class="section-title">我的身分</h2>
       <div class="card" id="me-card"><p class="muted">載入中…</p></div>
@@ -75,18 +70,6 @@
       document.getElementById("schedule").innerHTML = renderSchedule(rundown, settings, now);
     }
 
-    // 目前進度小卡：現在這段、下一段
-    function renderNowMini() {
-      const sec = document.getElementById("now-section");
-      const seg = rundown[liveIndex];
-      sec.classList.toggle("hidden", !seg);
-      if (!seg) return;
-      const next = rundown[liveIndex + 1];
-      document.getElementById("now-mini").innerHTML = `
-        ${seg.session ? `<span class="tag tag-zh">${esc(SESSIONS[seg.session].label)}${seg.round ? `・第 ${seg.round} 輪` : ""}</span>` : ""}
-        <h3 style="margin:8px 0 4px;font-size:24px">${esc(seg.title)}</h3>
-        <p class="muted" style="margin:0">下一項：${next ? esc(next.title) : "（最後一段）"}</p>`;
-    }
     setInterval(renderScheduleBox, 60 * 1000);
 
     // 這個人今天上午、下午各是什麼角色
@@ -138,7 +121,6 @@
       onChange(state, list, i) {
         rundown = list;
         liveIndex = i;
-        renderNowMini();
         renderScheduleBox();
       },
     });

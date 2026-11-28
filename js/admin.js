@@ -1,6 +1,6 @@
 // 後台：活動設定（名稱、題目、組名、加權）、名單
 import {
-  collection, doc, setDoc, onSnapshot, writeBatch, serverTimestamp,
+  collection, doc, setDoc, onSnapshot, writeBatch, serverTimestamp, getDocs,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   startPage, login, db, COL, esc, toast, confirmDialog, isSchoolEmail, watchSettings,
@@ -11,7 +11,7 @@ import {
   TOPIC_OPTIONS, TEAM_IDS, SESSIONS, SIDE_LABEL, TYPE_LABEL, MUSIC,
   buildDefaultRundown, makeSegment, planTimes, fmtMinutes, toMinutes,
 } from "./defaults.js";
-import { watchRundown, segHasTimer } from "./live.js";
+import { watchRundown, watchLive, liveUpdate, segHasTimer } from "./live.js";
 import { isSlidesUrl, slidesEditUrl } from "./slides.js";
 import { tallySession, ROUNDS } from "./votes.js";
 
@@ -49,6 +49,7 @@ startPage({
       started = true;
       watchRoster();
       watchVotes();
+      watchRehearsal();
       watchSettings((s) => { settings = s; fillSettingsOnce(); });
       watchRundown((r, exists) => {
         rundownExists = exists;
@@ -405,6 +406,7 @@ document.getElementById("load-current-btn").addEventListener("click", () => {
 // 當天流程編輯
 // ============================================================
 let editing = [];
+const openSegs = new Set(); // 展開來修改的段落（id）
 let rundownDirty = false;
 let rundownExists = false;
 const editorBox = document.getElementById("rundown-editor");
@@ -431,11 +433,13 @@ function renderRundown() {
   const musicOptions = (v) => `<option value="">（不播）</option>`
     + Object.entries(MUSIC).map(([k, label]) => `<option value="${k}" ${v === k ? "selected" : ""}>${esc(label)}</option>`).join("");
   editorBox.innerHTML = `<ol class="rd-list">${editing.map((s, i) => `
-    <li class="rd-item" data-i="${i}">
+    <li class="rd-item ${openSegs.has(s.id) ? "open" : ""}" data-i="${i}">
       <div class="rd-head">
         <span class="rd-time">${fmtMinutes(times[i].start)}</span>
+        <button class="rd-name" data-open type="button" title="點一下展開來修改">${esc(s.title)}</button>
         <span class="rd-tags">${segTags(s)}</span>
         <span class="spacer"></span>
+        <button class="btn btn-small ${openSegs.has(s.id) ? "btn-primary" : ""}" data-open type="button">${openSegs.has(s.id) ? "收起" : "修改"}</button>
         <button class="btn btn-small" data-move="-1" type="button" ${i === 0 ? "disabled" : ""} title="上移">↑</button>
         <button class="btn btn-small" data-move="1" type="button" ${i === editing.length - 1 ? "disabled" : ""} title="下移">↓</button>
         <button class="btn btn-small" data-dup type="button">複製</button>
@@ -462,6 +466,7 @@ editorBox.addEventListener("input", (e) => {
   else if (f === "untilTime" || f === "planStart") s[f] = v.trim() || null;
   else if (f === "music") s.music = v || null;
   else s[f] = v;
+  if (f === "title") { const n = li.querySelector(".rd-name"); if (n) n.textContent = v; }
   markDirty();
   // 時間欄位改了，左邊的預定時間要跟著更新（不重畫整個表，免得打字中斷）
   if (["durationMin", "untilTime", "planStart"].includes(f)) {
@@ -477,6 +482,13 @@ editorBox.addEventListener("click", async (e) => {
   const li = e.target.closest("[data-i]");
   if (!li) return;
   const i = Number(li.dataset.i);
+  if (e.target.closest("[data-open]")) {
+    const id = editing[i].id;
+    if (openSegs.has(id)) openSegs.delete(id); else openSegs.add(id);
+    renderRundown();
+    if (openSegs.has(id)) editorBox.querySelector(`[data-i="${i}"] [data-f="title"]`)?.focus();
+    return;
+  }
   const mv = e.target.closest("[data-move]")?.dataset.move;
   if (mv) {
     const j = i + Number(mv);
@@ -589,3 +601,75 @@ function renderVoteStats() {
       </table></div>` : `<p class="muted">還沒有人評分。</p>`}
     </details>`;
 }
+
+// ============================================================
+// 彩排模式、清除彩排資料
+// ============================================================
+let liveState = null;
+let liveWatched = false;
+function watchRehearsal() {
+  if (liveWatched) return;
+  liveWatched = true;
+  watchLive((st) => {
+    liveState = st;
+    const on = !!st?.rehearsal;
+    const badge = document.getElementById("rehearsal-state");
+    badge.textContent = on ? "彩排模式：開啟中" : "彩排模式：關閉（正式）";
+    badge.className = `badge ${on ? "badge-yellow" : "badge-gray"}`;
+    const btn = document.getElementById("rehearsal-btn");
+    btn.disabled = false;
+    btn.textContent = on ? "關閉彩排模式" : "打開彩排模式";
+  });
+}
+
+document.getElementById("rehearsal-btn").addEventListener("click", async () => {
+  try {
+    await liveUpdate({ rehearsal: !liveState?.rehearsal });
+  } catch (e) {
+    toast(`操作失敗：${e.message}`, "error", 5000);
+  }
+});
+
+// 一次最多刪 400 筆（Firestore 一個批次最多 500 筆）
+async function deleteAll(colName) {
+  const snap = await getDocs(collection(db, colName));
+  const refs = snap.docs.map((d) => d.ref || doc(db, colName, d.id));
+  for (let i = 0; i < refs.length; i += 400) {
+    const b = writeBatch(db);
+    refs.slice(i, i + 400).forEach((r) => b.delete(r));
+    await b.commit();
+  }
+  return refs.length;
+}
+
+document.getElementById("wipe-btn").addEventListener("click", async () => {
+  const ok = await confirmDialog({
+    title: "清除彩排資料？",
+    body: `<p>會刪除<b>所有評分、所有留言、頒獎結果</b>，流程回到「還沒開始」。<b>刪除後不能復原。</b></p>
+      <p class="small muted">正式比賽開始後請不要按。</p>`,
+    okText: "確定清除",
+    danger: true,
+    requireText: "清除",
+  });
+  if (!ok) return;
+  const btn = document.getElementById("wipe-btn");
+  const status = document.getElementById("wipe-status");
+  btn.disabled = true;
+  try {
+    status.textContent = "刪除評分中…";
+    const nv = await deleteAll(COL.votes);
+    status.textContent = "刪除留言中…";
+    const nc = await deleteAll(COL.comments);
+    status.textContent = "清除頒獎結果、流程進度…";
+    await deleteAll(COL.awards);
+    await setDoc(doc(db, COL.live, "state"), { updatedAt: serverTimestamp() });
+    status.textContent = `已清除：評分 ${nv} 張、留言 ${nc} 則、頒獎結果、流程進度。`;
+    toast("彩排資料已清除", "ok");
+  } catch (e) {
+    console.error(e);
+    status.textContent = `清除到一半失敗：${e.message}（可以再按一次）`;
+    toast(`清除失敗：${e.message}`, "error", 6000);
+  } finally {
+    btn.disabled = false;
+  }
+});
