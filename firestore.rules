@@ -316,6 +316,14 @@ service cloud.firestore {
       allow delete: if (isSchool() && resource.data.authorUid == request.auth.uid) || dCanControl();
     }
 
+    // debate_awards/results：頒獎典禮的結果（優勝組、花和番茄的數量、MVP）
+    //   只有控制者（主控台、投影畫面）讀寫；頒獎前觀眾和選手都讀不到
+    //   「計算結果」要讀名單，所以實際上要用管理員帳號按；控制老師可以選 MVP、平手時指定優勝組
+    match /debate_awards/{docId} {
+      allow read: if dCanControl();
+      allow write: if dCanControl() && docId == 'results';
+    }
+
     // debate_clock/{uid}：校時用。每人只能寫自己的，而且只能寫「伺服器現在的時間」
     match /debate_clock/{uid} {
       allow read: if isSchool() && request.auth.uid == uid;

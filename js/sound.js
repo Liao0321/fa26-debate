@@ -96,11 +96,19 @@ export class SoundBoard {
   changed() { this.onChange?.(this.status()); }
 
   // 音效（鈴聲、提醒聲）：播一次，不影響背景音樂；src 為 null ＝ 不播
+  // 回傳 <audio>，需要時可以提早停掉（例如揭曉時把鼓聲收掉）
   effect(src) {
-    if (!this.enabled || !src) return;
+    if (!this.enabled || !src) return null;
     const a = new Audio(src);
     a.volume = this.volume;
     a.addEventListener("error", () => {});
     a.play().catch(() => {});
+    return a;
+  }
+
+  // 淡出並停止一個音效
+  stopEffect(a, ms = 800) {
+    if (!a) return;
+    fadeTo(a, 0, ms, () => { a.pause(); a.src = ""; });
   }
 }
