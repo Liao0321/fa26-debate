@@ -186,9 +186,7 @@ function votePanelHtml(seg) {
   const isOpen = v && seg.openVote && v.session === seg.openVote.session && v.round === seg.openVote.round;
   return `
     <div class="d-qr-card">
-      <h3>📱 掃描 QR code 評分</h3>
       <div class="d-qr" id="vote-qr"></div>
-      <div class="d-qr-url">${esc(voteUrl())}</div>
       <div class="d-vote-state ${isOpen ? "" : "off"}">${round ? `第 ${round} 輪評分${isOpen ? "開放中" : "已關閉"}` : "評分"}</div>
     </div>
     ${seg.type === "break" ? `<div class="d-info" data-endinfo></div>` : ""}`;
